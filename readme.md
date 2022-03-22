@@ -1,2 +1,1 @@
-# vial-qmk
- 
+# vial-qmk-firmware
