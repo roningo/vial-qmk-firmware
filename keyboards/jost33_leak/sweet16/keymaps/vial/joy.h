@@ -1,0 +1,21 @@
+#pragma once
+
+#include "progmem.h"
+
+#include "joystick.h"
+#include "analog.h"
+#include "pointing_device.h"
+
+#define LOW_AXIS_VALUE 1
+#define REST_AXIS_VALUE 512
+#define HIGH_AXIS_VALUE 1023
+#define MAX_COORDINATE_VALUE 127
+#define COORDINATE_THRESHOLD_VALUE 64
+
+//joystick config
+joystick_config_t joystick_axes[JOYSTICK_AXES_COUNT] = {
+    [0] = JOYSTICK_AXIS_IN(RX_PIN, LOW_AXIS_VALUE, REST_AXIS_VALUE, HIGH_AXIS_VALUE),
+	[1] = JOYSTICK_AXIS_IN(RY_PIN, LOW_AXIS_VALUE, REST_AXIS_VALUE, HIGH_AXIS_VALUE),
+	[2] = JOYSTICK_AXIS_IN(LX_PIN, LOW_AXIS_VALUE, REST_AXIS_VALUE, HIGH_AXIS_VALUE),
+	[3] = JOYSTICK_AXIS_IN(LY_PIN, LOW_AXIS_VALUE, REST_AXIS_VALUE, HIGH_AXIS_VALUE)
+};
