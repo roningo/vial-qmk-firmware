@@ -8,13 +8,13 @@
  .build/obj_1upkeyboards_tk_sweet16_v2_promicro/src/layouts.h \
  keyboards/1upkeyboards_tk/sweet16/keymaps/vial/config.h \
  quantum/rgblight_post_config.h lib/lufa/LUFA/Drivers/USB/Core/USBMode.h \
- lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Common.h \
- lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Architectures.h \
- lib/lufa/LUFA/Drivers/USB/Core/../../../Common/BoardTypes.h \
- lib/lufa/LUFA/Drivers/USB/Core/../../../Common/ArchitectureSpecific.h \
- lib/lufa/LUFA/Drivers/USB/Core/../../../Common/CompilerSpecific.h \
- lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Attributes.h \
- lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Endianness.h
+ d:\download\vial-qmk\lib\lufa\lufa\common\common.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\Architectures.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\BoardTypes.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\ArchitectureSpecific.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\CompilerSpecific.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\Attributes.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\Endianness.h
 
 keyboards/1upkeyboards_tk/sweet16/config.h:
 
@@ -40,16 +40,16 @@ quantum/rgblight_post_config.h:
 
 lib/lufa/LUFA/Drivers/USB/Core/USBMode.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Common.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\common.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Architectures.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\Architectures.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/../../../Common/BoardTypes.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\BoardTypes.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/../../../Common/ArchitectureSpecific.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\ArchitectureSpecific.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/../../../Common/CompilerSpecific.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\CompilerSpecific.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Attributes.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\Attributes.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Endianness.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\Endianness.h:

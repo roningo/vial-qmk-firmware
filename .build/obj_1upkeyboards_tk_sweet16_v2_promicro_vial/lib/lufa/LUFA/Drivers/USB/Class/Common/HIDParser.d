@@ -9,17 +9,17 @@
  keyboards/1upkeyboards_tk/sweet16/keymaps/vial/config.h \
  quantum/rgblight_post_config.h \
  lib/lufa/LUFA/Drivers/USB/Class/Common/HIDParser.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\common.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\Architectures.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\BoardTypes.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\ArchitectureSpecific.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\CompilerSpecific.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\Attributes.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\Endianness.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\common.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\Architectures.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\BoardTypes.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\ArchitectureSpecific.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\CompilerSpecific.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\Attributes.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\Endianness.h \
  lib/lufa/LUFA/Drivers/USB/Class/Common/HIDReportData.h \
  lib/lufa/LUFA/Drivers/USB/Class/Common/HIDClassCommon.h \
  lib/lufa/LUFA/Drivers/USB/Class/Common/../../Core/StdDescriptors.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\common.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\common.h \
  lib/lufa/LUFA/Drivers/USB/Class/Common/../../Core/USBMode.h \
  lib/lufa/LUFA/Drivers/USB/Class/Common/../../Core/Events.h
 
@@ -47,19 +47,19 @@ quantum/rgblight_post_config.h:
 
 lib/lufa/LUFA/Drivers/USB/Class/Common/HIDParser.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\common.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\common.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\Architectures.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\Architectures.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\BoardTypes.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\BoardTypes.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\ArchitectureSpecific.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\ArchitectureSpecific.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\CompilerSpecific.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\CompilerSpecific.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\Attributes.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\Attributes.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\Endianness.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\Endianness.h:
 
 lib/lufa/LUFA/Drivers/USB/Class/Common/HIDReportData.h:
 
@@ -67,7 +67,7 @@ lib/lufa/LUFA/Drivers/USB/Class/Common/HIDClassCommon.h:
 
 lib/lufa/LUFA/Drivers/USB/Class/Common/../../Core/StdDescriptors.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\common.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\common.h:
 
 lib/lufa/LUFA/Drivers/USB/Class/Common/../../Core/USBMode.h:
 

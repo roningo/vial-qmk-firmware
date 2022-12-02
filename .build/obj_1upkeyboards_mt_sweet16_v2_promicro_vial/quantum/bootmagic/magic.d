@@ -24,20 +24,20 @@
  lib/lufa/LUFA/Drivers/USB/../../Common/Attributes.h \
  lib/lufa/LUFA/Drivers/USB/../../Common/Endianness.h \
  lib/lufa/LUFA/Drivers/USB/Core/USBMode.h \
- lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Common.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\common.h \
  lib/lufa/LUFA/Drivers/USB/Core/USBTask.h \
  lib/lufa/LUFA/Drivers/USB/Core/USBMode.h \
  lib/lufa/LUFA/Drivers/USB/Core/USBController.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/USBController_AVR8.h \
- lib/lufa/LUFA/Drivers/USB/Core/AVR8/../../../../Common/Common.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\common.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/../USBMode.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/../Events.h \
- lib/lufa/LUFA/Drivers/USB/Core/AVR8/../../../../Common/Common.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\common.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/../USBMode.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/../USBTask.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/../USBInterrupt.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/../AVR8/USBInterrupt_AVR8.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\common.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\common.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/../AVR8/../USBMode.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/../AVR8/../Events.h \
  lib/lufa/LUFA/Drivers/USB/Core/AVR8/../AVR8/../USBController.h \
@@ -79,7 +79,7 @@
  lib/lufa/LUFA/Drivers/USB/Class/Device/AudioClassDevice.h \
  lib/lufa/LUFA/Drivers/USB/Class/Device/../../USB.h \
  lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/AudioClassCommon.h \
- lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/../../Core/StdDescriptors.h \
+ d:\download\vial-qmk\lib\lufa\lufa\drivers\usb\core\stddescriptors.h \
  lib/lufa/LUFA/Drivers/USB/Class/CCIDClass.h \
  lib/lufa/LUFA/Drivers/USB/Class/Device/CCIDClassDevice.h \
  lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/CCIDClassCommon.h \
@@ -90,7 +90,7 @@
  lib/lufa/LUFA/Drivers/USB/Class/Device/HIDClassDevice.h \
  lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/HIDClassCommon.h \
  lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/HIDParser.h \
- d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\common.h \
+ d:\download\vial-qmk\lib\lufa\lufa\common\common.h \
  lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/HIDReportData.h \
  lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/HIDClassCommon.h \
  lib/lufa/LUFA/Drivers/USB/Class/MassStorageClass.h \
@@ -190,7 +190,7 @@ lib/lufa/LUFA/Drivers/USB/../../Common/Endianness.h:
 
 lib/lufa/LUFA/Drivers/USB/Core/USBMode.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/../../../Common/Common.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\common.h:
 
 lib/lufa/LUFA/Drivers/USB/Core/USBTask.h:
 
@@ -200,13 +200,13 @@ lib/lufa/LUFA/Drivers/USB/Core/USBController.h:
 
 lib/lufa/LUFA/Drivers/USB/Core/AVR8/USBController_AVR8.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/AVR8/../../../../Common/Common.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\common.h:
 
 lib/lufa/LUFA/Drivers/USB/Core/AVR8/../USBMode.h:
 
 lib/lufa/LUFA/Drivers/USB/Core/AVR8/../Events.h:
 
-lib/lufa/LUFA/Drivers/USB/Core/AVR8/../../../../Common/Common.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\common.h:
 
 lib/lufa/LUFA/Drivers/USB/Core/AVR8/../USBMode.h:
 
@@ -216,7 +216,7 @@ lib/lufa/LUFA/Drivers/USB/Core/AVR8/../USBInterrupt.h:
 
 lib/lufa/LUFA/Drivers/USB/Core/AVR8/../AVR8/USBInterrupt_AVR8.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\common.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\common.h:
 
 lib/lufa/LUFA/Drivers/USB/Core/AVR8/../AVR8/../USBMode.h:
 
@@ -300,7 +300,7 @@ lib/lufa/LUFA/Drivers/USB/Class/Device/../../USB.h:
 
 lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/AudioClassCommon.h:
 
-lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/../../Core/StdDescriptors.h:
+d:\download\vial-qmk\lib\lufa\lufa\drivers\usb\core\stddescriptors.h:
 
 lib/lufa/LUFA/Drivers/USB/Class/CCIDClass.h:
 
@@ -322,7 +322,7 @@ lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/HIDClassCommon.h:
 
 lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/HIDParser.h:
 
-d:\download\qmk_firmware\vial-qmk\lib\lufa\lufa\common\common.h:
+d:\download\vial-qmk\lib\lufa\lufa\common\common.h:
 
 lib/lufa/LUFA/Drivers/USB/Class/Device/../Common/HIDReportData.h:
 
