@@ -5,7 +5,7 @@
 /* USB Device descriptor parameter */
 #define VENDOR_ID       0x414B 
 #define MANUFACTURER    LeAK
-#define PRODUCT         Tk47
+#define PRODUCT         CustomLeAK
 
 /* key matrix size */
 #define MATRIX_ROWS 2

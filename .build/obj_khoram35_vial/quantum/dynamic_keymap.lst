@@ -1,0 +1,1521 @@
+   1               		.file	"dynamic_keymap.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.dynamic_keymap_get_layer_count,"ax",@progbits
+  11               	.global	dynamic_keymap_get_layer_count
+  13               	dynamic_keymap_get_layer_count:
+  14               	.LFB117:
+  15               		.file 1 "quantum/dynamic_keymap.c"
+   1:quantum/dynamic_keymap.c **** /* Copyright 2017 Jason Williams (Wilba)
+   2:quantum/dynamic_keymap.c ****  *
+   3:quantum/dynamic_keymap.c ****  * This program is free software: you can redistribute it and/or modify
+   4:quantum/dynamic_keymap.c ****  * it under the terms of the GNU General Public License as published by
+   5:quantum/dynamic_keymap.c ****  * the Free Software Foundation, either version 2 of the License, or
+   6:quantum/dynamic_keymap.c ****  * (at your option) any later version.
+   7:quantum/dynamic_keymap.c ****  *
+   8:quantum/dynamic_keymap.c ****  * This program is distributed in the hope that it will be useful,
+   9:quantum/dynamic_keymap.c ****  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  10:quantum/dynamic_keymap.c ****  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  11:quantum/dynamic_keymap.c ****  * GNU General Public License for more details.
+  12:quantum/dynamic_keymap.c ****  *
+  13:quantum/dynamic_keymap.c ****  * You should have received a copy of the GNU General Public License
+  14:quantum/dynamic_keymap.c ****  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  15:quantum/dynamic_keymap.c ****  */
+  16:quantum/dynamic_keymap.c **** 
+  17:quantum/dynamic_keymap.c **** #include "config.h"
+  18:quantum/dynamic_keymap.c **** #include "keymap.h"  // to get keymaps[][][]
+  19:quantum/dynamic_keymap.c **** #include "tmk_core/common/eeprom.h"
+  20:quantum/dynamic_keymap.c **** #include "progmem.h"  // to read default from flash
+  21:quantum/dynamic_keymap.c **** #include "quantum.h"  // for send_string()
+  22:quantum/dynamic_keymap.c **** #include "dynamic_keymap.h"
+  23:quantum/dynamic_keymap.c **** #include "via.h"  // for default VIA_EEPROM_ADDR_END
+  24:quantum/dynamic_keymap.c **** 
+  25:quantum/dynamic_keymap.c **** #ifndef DYNAMIC_KEYMAP_LAYER_COUNT
+  26:quantum/dynamic_keymap.c **** #    define DYNAMIC_KEYMAP_LAYER_COUNT 4
+  27:quantum/dynamic_keymap.c **** #endif
+  28:quantum/dynamic_keymap.c **** 
+  29:quantum/dynamic_keymap.c **** #ifndef DYNAMIC_KEYMAP_MACRO_COUNT
+  30:quantum/dynamic_keymap.c **** #    define DYNAMIC_KEYMAP_MACRO_COUNT 16
+  31:quantum/dynamic_keymap.c **** #endif
+  32:quantum/dynamic_keymap.c **** 
+  33:quantum/dynamic_keymap.c **** // This is the default EEPROM max address to use for dynamic keymaps.
+  34:quantum/dynamic_keymap.c **** // The default is the ATmega32u4 EEPROM max address.
+  35:quantum/dynamic_keymap.c **** // Explicitly override it if the keyboard uses a microcontroller with
+  36:quantum/dynamic_keymap.c **** // more EEPROM *and* it makes sense to increase it.
+  37:quantum/dynamic_keymap.c **** #ifndef DYNAMIC_KEYMAP_EEPROM_MAX_ADDR
+  38:quantum/dynamic_keymap.c **** #    if defined(__AVR_AT90USB646__) || defined(__AVR_AT90USB647__)
+  39:quantum/dynamic_keymap.c **** #        define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 2047
+  40:quantum/dynamic_keymap.c **** #    elif defined(__AVR_AT90USB1286__) || defined(__AVR_AT90USB1287__)
+  41:quantum/dynamic_keymap.c **** #        define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 4095
+  42:quantum/dynamic_keymap.c **** #    elif defined(__AVR_ATmega16U2__) || defined(__AVR_ATmega16U4__) || defined(__AVR_AT90USB162__)
+  43:quantum/dynamic_keymap.c **** #        define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 511
+  44:quantum/dynamic_keymap.c **** #    else
+  45:quantum/dynamic_keymap.c **** #        define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 1023
+  46:quantum/dynamic_keymap.c **** #    endif
+  47:quantum/dynamic_keymap.c **** #endif
+  48:quantum/dynamic_keymap.c **** 
+  49:quantum/dynamic_keymap.c **** // Due to usage of uint16_t check for max 65535
+  50:quantum/dynamic_keymap.c **** #if DYNAMIC_KEYMAP_EEPROM_MAX_ADDR > 65535
+  51:quantum/dynamic_keymap.c **** #    error DYNAMIC_KEYMAP_EEPROM_MAX_ADDR must be less than 65536
+  52:quantum/dynamic_keymap.c **** #endif
+  53:quantum/dynamic_keymap.c **** 
+  54:quantum/dynamic_keymap.c **** // If DYNAMIC_KEYMAP_EEPROM_ADDR not explicitly defined in config.h,
+  55:quantum/dynamic_keymap.c **** // default it start after VIA_EEPROM_CUSTOM_ADDR+VIA_EEPROM_CUSTOM_SIZE
+  56:quantum/dynamic_keymap.c **** #ifndef DYNAMIC_KEYMAP_EEPROM_ADDR
+  57:quantum/dynamic_keymap.c **** #    ifdef VIA_EEPROM_CUSTOM_CONFIG_ADDR
+  58:quantum/dynamic_keymap.c **** #        define DYNAMIC_KEYMAP_EEPROM_ADDR (VIA_EEPROM_CUSTOM_CONFIG_ADDR + VIA_EEPROM_CUSTOM_CONFI
+  59:quantum/dynamic_keymap.c **** #    else
+  60:quantum/dynamic_keymap.c **** #        error DYNAMIC_KEYMAP_EEPROM_ADDR not defined
+  61:quantum/dynamic_keymap.c **** #    endif
+  62:quantum/dynamic_keymap.c **** #endif
+  63:quantum/dynamic_keymap.c **** 
+  64:quantum/dynamic_keymap.c **** // Dynamic macro starts after dynamic keymaps
+  65:quantum/dynamic_keymap.c **** #ifndef DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR
+  66:quantum/dynamic_keymap.c **** #    define DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR (DYNAMIC_KEYMAP_EEPROM_ADDR + (DYNAMIC_KEYMAP_LAYER_CO
+  67:quantum/dynamic_keymap.c **** #endif
+  68:quantum/dynamic_keymap.c **** 
+  69:quantum/dynamic_keymap.c **** // Sanity check that dynamic keymaps fit in available EEPROM
+  70:quantum/dynamic_keymap.c **** // If there's not 100 bytes available for macros, then something is wrong.
+  71:quantum/dynamic_keymap.c **** // The keyboard should override DYNAMIC_KEYMAP_LAYER_COUNT to reduce it,
+  72:quantum/dynamic_keymap.c **** // or DYNAMIC_KEYMAP_EEPROM_MAX_ADDR to increase it, *only if* the microcontroller has
+  73:quantum/dynamic_keymap.c **** // more than the default.
+  74:quantum/dynamic_keymap.c **** #if DYNAMIC_KEYMAP_EEPROM_MAX_ADDR - DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR < 100
+  75:quantum/dynamic_keymap.c **** #    error Dynamic keymaps are configured to use more EEPROM than is available.
+  76:quantum/dynamic_keymap.c **** #endif
+  77:quantum/dynamic_keymap.c **** 
+  78:quantum/dynamic_keymap.c **** // Dynamic macros are stored after the keymaps and use what is available
+  79:quantum/dynamic_keymap.c **** // up to and including DYNAMIC_KEYMAP_EEPROM_MAX_ADDR.
+  80:quantum/dynamic_keymap.c **** #ifndef DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE
+  81:quantum/dynamic_keymap.c **** #    define DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE (DYNAMIC_KEYMAP_EEPROM_MAX_ADDR - DYNAMIC_KEYMAP_MACRO
+  82:quantum/dynamic_keymap.c **** #endif
+  83:quantum/dynamic_keymap.c **** 
+  84:quantum/dynamic_keymap.c **** uint8_t dynamic_keymap_get_layer_count(void) { return DYNAMIC_KEYMAP_LAYER_COUNT; }
+  16               		.loc 1 84 46 view -0
+  17               		.cfi_startproc
+  18               	/* prologue: function */
+  19               	/* frame size = 0 */
+  20               	/* stack size = 0 */
+  21               	.L__stack_usage = 0
+  22               		.loc 1 84 48 view .LVU1
+  23               		.loc 1 84 1 is_stmt 0 view .LVU2
+  24 0000 84E0      		ldi r24,lo8(4)
+  25               	/* epilogue start */
+  26 0002 0895      		ret
+  27               		.cfi_endproc
+  28               	.LFE117:
+  30               		.section	.text.dynamic_keymap_key_to_eeprom_address,"ax",@progbits
+  31               	.global	dynamic_keymap_key_to_eeprom_address
+  33               	dynamic_keymap_key_to_eeprom_address:
+  34               	.LVL0:
+  35               	.LFB118:
+  85:quantum/dynamic_keymap.c **** 
+  86:quantum/dynamic_keymap.c **** void *dynamic_keymap_key_to_eeprom_address(uint8_t layer, uint8_t row, uint8_t column) {
+  36               		.loc 1 86 88 is_stmt 1 view -0
+  37               		.cfi_startproc
+  38               	/* prologue: function */
+  39               	/* frame size = 0 */
+  40               	/* stack size = 0 */
+  41               	.L__stack_usage = 0
+  87:quantum/dynamic_keymap.c ****     // TODO: optimize this with some left shifts
+  88:quantum/dynamic_keymap.c ****     return ((void *)DYNAMIC_KEYMAP_EEPROM_ADDR) + (layer * MATRIX_ROWS * MATRIX_COLS * 2) + (row * 
+  42               		.loc 1 88 5 view .LVU4
+  43               		.loc 1 88 127 is_stmt 0 view .LVU5
+  44 0000 50E0      		ldi r21,0
+  45 0002 440F      		lsl r20
+  46 0004 551F      		rol r21
+  47               	.LVL1:
+  48               		.loc 1 88 117 view .LVU6
+  49 0006 96E1      		ldi r25,lo8(22)
+  50 0008 699F      		mul r22,r25
+  51 000a 400D      		add r20,r0
+  52 000c 511D      		adc r21,r1
+  53 000e 1124      		clr __zero_reg__
+  54 0010 9AE9      		ldi r25,lo8(-102)
+  55 0012 899F      		mul r24,r25
+  56 0014 400D      		add r20,r0
+  57 0016 511D      		adc r21,r1
+  58 0018 1124      		clr __zero_reg__
+  89:quantum/dynamic_keymap.c **** }
+  59               		.loc 1 89 1 view .LVU7
+  60 001a CA01      		movw r24,r20
+  61               	.LVL2:
+  62               		.loc 1 89 1 view .LVU8
+  63 001c 8796      		adiw r24,39
+  64               	/* epilogue start */
+  65 001e 0895      		ret
+  66               		.cfi_endproc
+  67               	.LFE118:
+  69               		.section	.text.dynamic_keymap_get_keycode,"ax",@progbits
+  70               	.global	dynamic_keymap_get_keycode
+  72               	dynamic_keymap_get_keycode:
+  73               	.LVL3:
+  74               	.LFB119:
+  90:quantum/dynamic_keymap.c **** 
+  91:quantum/dynamic_keymap.c **** uint16_t dynamic_keymap_get_keycode(uint8_t layer, uint8_t row, uint8_t column) {
+  75               		.loc 1 91 81 is_stmt 1 view -0
+  76               		.cfi_startproc
+  77               		.loc 1 91 81 is_stmt 0 view .LVU10
+  78 0000 0F93      		push r16
+  79               	.LCFI0:
+  80               		.cfi_def_cfa_offset 3
+  81               		.cfi_offset 16, -2
+  82 0002 1F93      		push r17
+  83               	.LCFI1:
+  84               		.cfi_def_cfa_offset 4
+  85               		.cfi_offset 17, -3
+  86 0004 CF93      		push r28
+  87               	.LCFI2:
+  88               		.cfi_def_cfa_offset 5
+  89               		.cfi_offset 28, -4
+  90 0006 DF93      		push r29
+  91               	.LCFI3:
+  92               		.cfi_def_cfa_offset 6
+  93               		.cfi_offset 29, -5
+  94               	/* prologue: function */
+  95               	/* frame size = 0 */
+  96               	/* stack size = 4 */
+  97               	.L__stack_usage = 4
+  92:quantum/dynamic_keymap.c ****     void *address = dynamic_keymap_key_to_eeprom_address(layer, row, column);
+  98               		.loc 1 92 5 is_stmt 1 view .LVU11
+  99               		.loc 1 92 21 is_stmt 0 view .LVU12
+ 100 0008 0E94 0000 		call dynamic_keymap_key_to_eeprom_address
+ 101               	.LVL4:
+ 102               		.loc 1 92 21 view .LVU13
+ 103 000c 8C01      		movw r16,r24
+ 104               	.LVL5:
+  93:quantum/dynamic_keymap.c ****     // Big endian, so we can read/write EEPROM directly from host if we want
+  94:quantum/dynamic_keymap.c ****     uint16_t keycode = eeprom_read_byte(address) << 8;
+ 105               		.loc 1 94 5 is_stmt 1 view .LVU14
+ 106               		.loc 1 94 24 is_stmt 0 view .LVU15
+ 107 000e 0E94 0000 		call eeprom_read_byte
+ 108               	.LVL6:
+ 109 0012 C82F      		mov r28,r24
+ 110 0014 D0E0      		ldi r29,0
+ 111               		.loc 1 94 50 view .LVU16
+ 112 0016 DC2F      		mov r29,r28
+ 113 0018 CC27      		clr r28
+ 114               	.LVL7:
+  95:quantum/dynamic_keymap.c ****     keycode |= eeprom_read_byte(address + 1);
+ 115               		.loc 1 95 5 is_stmt 1 view .LVU17
+ 116               		.loc 1 95 16 is_stmt 0 view .LVU18
+ 117 001a C801      		movw r24,r16
+ 118 001c 0196      		adiw r24,1
+ 119 001e 0E94 0000 		call eeprom_read_byte
+ 120               	.LVL8:
+  96:quantum/dynamic_keymap.c ****     return keycode;
+ 121               		.loc 1 96 5 is_stmt 1 view .LVU19
+  97:quantum/dynamic_keymap.c **** }
+ 122               		.loc 1 97 1 is_stmt 0 view .LVU20
+ 123 0022 9E01      		movw r18,r28
+ 124 0024 282B      		or r18,r24
+ 125 0026 C901      		movw r24,r18
+ 126               	.LVL9:
+ 127               	/* epilogue start */
+ 128               		.loc 1 97 1 view .LVU21
+ 129 0028 DF91      		pop r29
+ 130 002a CF91      		pop r28
+ 131 002c 1F91      		pop r17
+ 132 002e 0F91      		pop r16
+ 133               	.LVL10:
+ 134               		.loc 1 97 1 view .LVU22
+ 135 0030 0895      		ret
+ 136               		.cfi_endproc
+ 137               	.LFE119:
+ 139               		.section	.text.dynamic_keymap_set_keycode,"ax",@progbits
+ 140               	.global	dynamic_keymap_set_keycode
+ 142               	dynamic_keymap_set_keycode:
+ 143               	.LVL11:
+ 144               	.LFB120:
+  98:quantum/dynamic_keymap.c **** 
+  99:quantum/dynamic_keymap.c **** void dynamic_keymap_set_keycode(uint8_t layer, uint8_t row, uint8_t column, uint16_t keycode) {
+ 145               		.loc 1 99 95 is_stmt 1 view -0
+ 146               		.cfi_startproc
+ 147               		.loc 1 99 95 is_stmt 0 view .LVU24
+ 148 0000 0F93      		push r16
+ 149               	.LCFI4:
+ 150               		.cfi_def_cfa_offset 3
+ 151               		.cfi_offset 16, -2
+ 152 0002 1F93      		push r17
+ 153               	.LCFI5:
+ 154               		.cfi_def_cfa_offset 4
+ 155               		.cfi_offset 17, -3
+ 156 0004 CF93      		push r28
+ 157               	.LCFI6:
+ 158               		.cfi_def_cfa_offset 5
+ 159               		.cfi_offset 28, -4
+ 160 0006 DF93      		push r29
+ 161               	.LCFI7:
+ 162               		.cfi_def_cfa_offset 6
+ 163               		.cfi_offset 29, -5
+ 164               	/* prologue: function */
+ 165               	/* frame size = 0 */
+ 166               	/* stack size = 4 */
+ 167               	.L__stack_usage = 4
+ 168 0008 122F      		mov r17,r18
+ 169 000a 032F      		mov r16,r19
+ 100:quantum/dynamic_keymap.c ****     void *address = dynamic_keymap_key_to_eeprom_address(layer, row, column);
+ 170               		.loc 1 100 5 is_stmt 1 view .LVU25
+ 171               		.loc 1 100 21 is_stmt 0 view .LVU26
+ 172 000c 0E94 0000 		call dynamic_keymap_key_to_eeprom_address
+ 173               	.LVL12:
+ 174               		.loc 1 100 21 view .LVU27
+ 175 0010 EC01      		movw r28,r24
+ 176               	.LVL13:
+ 101:quantum/dynamic_keymap.c ****     // Big endian, so we can read/write EEPROM directly from host if we want
+ 102:quantum/dynamic_keymap.c ****     eeprom_update_byte(address, (uint8_t)(keycode >> 8));
+ 177               		.loc 1 102 5 is_stmt 1 view .LVU28
+ 178 0012 602F      		mov r22,r16
+ 179 0014 0E94 0000 		call eeprom_update_byte
+ 180               	.LVL14:
+ 103:quantum/dynamic_keymap.c ****     eeprom_update_byte(address + 1, (uint8_t)(keycode & 0xFF));
+ 181               		.loc 1 103 5 view .LVU29
+ 182 0018 612F      		mov r22,r17
+ 183 001a CE01      		movw r24,r28
+ 184 001c 0196      		adiw r24,1
+ 185               	/* epilogue start */
+ 104:quantum/dynamic_keymap.c **** }
+ 186               		.loc 1 104 1 is_stmt 0 view .LVU30
+ 187 001e DF91      		pop r29
+ 188 0020 CF91      		pop r28
+ 189               	.LVL15:
+ 190               		.loc 1 104 1 view .LVU31
+ 191 0022 1F91      		pop r17
+ 192 0024 0F91      		pop r16
+ 103:quantum/dynamic_keymap.c ****     eeprom_update_byte(address + 1, (uint8_t)(keycode & 0xFF));
+ 193               		.loc 1 103 5 view .LVU32
+ 194 0026 0C94 0000 		jmp eeprom_update_byte
+ 195               	.LVL16:
+ 103:quantum/dynamic_keymap.c ****     eeprom_update_byte(address + 1, (uint8_t)(keycode & 0xFF));
+ 196               		.loc 1 103 5 view .LVU33
+ 197               		.cfi_endproc
+ 198               	.LFE120:
+ 200               		.section	.text.dynamic_keymap_reset,"ax",@progbits
+ 201               	.global	dynamic_keymap_reset
+ 203               	dynamic_keymap_reset:
+ 204               	.LFB121:
+ 105:quantum/dynamic_keymap.c **** 
+ 106:quantum/dynamic_keymap.c **** void dynamic_keymap_reset(void) {
+ 205               		.loc 1 106 33 is_stmt 1 view -0
+ 206               		.cfi_startproc
+ 207 0000 AF92      		push r10
+ 208               	.LCFI8:
+ 209               		.cfi_def_cfa_offset 3
+ 210               		.cfi_offset 10, -2
+ 211 0002 BF92      		push r11
+ 212               	.LCFI9:
+ 213               		.cfi_def_cfa_offset 4
+ 214               		.cfi_offset 11, -3
+ 215 0004 CF92      		push r12
+ 216               	.LCFI10:
+ 217               		.cfi_def_cfa_offset 5
+ 218               		.cfi_offset 12, -4
+ 219 0006 DF92      		push r13
+ 220               	.LCFI11:
+ 221               		.cfi_def_cfa_offset 6
+ 222               		.cfi_offset 13, -5
+ 223 0008 EF92      		push r14
+ 224               	.LCFI12:
+ 225               		.cfi_def_cfa_offset 7
+ 226               		.cfi_offset 14, -6
+ 227 000a FF92      		push r15
+ 228               	.LCFI13:
+ 229               		.cfi_def_cfa_offset 8
+ 230               		.cfi_offset 15, -7
+ 231 000c 1F93      		push r17
+ 232               	.LCFI14:
+ 233               		.cfi_def_cfa_offset 9
+ 234               		.cfi_offset 17, -8
+ 235 000e CF93      		push r28
+ 236               	.LCFI15:
+ 237               		.cfi_def_cfa_offset 10
+ 238               		.cfi_offset 28, -9
+ 239 0010 DF93      		push r29
+ 240               	.LCFI16:
+ 241               		.cfi_def_cfa_offset 11
+ 242               		.cfi_offset 29, -10
+ 243               	/* prologue: function */
+ 244               	/* frame size = 0 */
+ 245               	/* stack size = 9 */
+ 246               	.L__stack_usage = 9
+ 107:quantum/dynamic_keymap.c ****     // Reset the keymaps in EEPROM to what is in flash.
+ 108:quantum/dynamic_keymap.c ****     // All keyboards using dynamic keymaps should define a layout
+ 109:quantum/dynamic_keymap.c ****     // for the same number of layers as DYNAMIC_KEYMAP_LAYER_COUNT.
+ 110:quantum/dynamic_keymap.c ****     for (int layer = 0; layer < DYNAMIC_KEYMAP_LAYER_COUNT; layer++) {
+ 247               		.loc 1 110 5 view .LVU35
+ 248               	.LBB2:
+ 249               		.loc 1 110 10 view .LVU36
+ 250               	.LVL17:
+ 251               		.loc 1 110 25 view .LVU37
+ 252 0012 80E0      		ldi r24,lo8(keymaps)
+ 253 0014 C82E      		mov r12,r24
+ 254 0016 80E0      		ldi r24,hi8(keymaps)
+ 255 0018 D82E      		mov r13,r24
+ 256               	.LBE2:
+ 106:quantum/dynamic_keymap.c ****     // Reset the keymaps in EEPROM to what is in flash.
+ 257               		.loc 1 106 33 is_stmt 0 view .LVU38
+ 258 001a D0E0      		ldi r29,0
+ 259               	.LVL18:
+ 260               	.L6:
+ 261               	.LBB8:
+ 262               	.LBB3:
+ 111:quantum/dynamic_keymap.c ****         for (int row = 0; row < MATRIX_ROWS; row++) {
+ 263               		.loc 1 111 27 is_stmt 1 view .LVU39
+ 264               	.LBE3:
+ 265               	.LBE8:
+ 106:quantum/dynamic_keymap.c ****     // Reset the keymaps in EEPROM to what is in flash.
+ 266               		.loc 1 106 33 is_stmt 0 view .LVU40
+ 267 001c 7601      		movw r14,r12
+ 268 001e C0E0      		ldi r28,0
+ 269 0020 00C0      		rjmp .L10
+ 270               	.LVL19:
+ 271               	.L7:
+ 272               	.LBB9:
+ 273               	.LBB7:
+ 274               	.LBB4:
+ 112:quantum/dynamic_keymap.c ****             for (int column = 0; column < MATRIX_COLS; column++) {
+ 113:quantum/dynamic_keymap.c ****                 dynamic_keymap_set_keycode(layer, row, column, pgm_read_word(&keymaps[layer][row][c
+ 275               		.loc 1 113 17 is_stmt 1 discriminator 3 view .LVU41
+ 276               	.LBB5:
+ 277               		.loc 1 113 64 discriminator 3 view .LVU42
+ 278               		.loc 1 113 64 discriminator 3 view .LVU43
+ 279               		.loc 1 113 64 discriminator 3 view .LVU44
+ 280 0022 F501      		movw r30,r10
+ 281               	/* #APP */
+ 282               	 ;  113 "quantum/dynamic_keymap.c" 1
+ 283 0024 2591      		lpm r18, Z+
+ 284 0026 3491      		lpm r19, Z
+ 285               		
+ 286               	 ;  0 "" 2
+ 287               	.LVL20:
+ 288               		.loc 1 113 64 discriminator 3 view .LVU45
+ 289               	/* #NOAPP */
+ 290               	.LBE5:
+ 291               		.loc 1 113 17 is_stmt 0 discriminator 3 view .LVU46
+ 292 0028 412F      		mov r20,r17
+ 293 002a 6C2F      		mov r22,r28
+ 294 002c 8D2F      		mov r24,r29
+ 295 002e 0E94 0000 		call dynamic_keymap_set_keycode
+ 296               	.LVL21:
+ 112:quantum/dynamic_keymap.c ****             for (int column = 0; column < MATRIX_COLS; column++) {
+ 297               		.loc 1 112 56 is_stmt 1 discriminator 3 view .LVU47
+ 112:quantum/dynamic_keymap.c ****             for (int column = 0; column < MATRIX_COLS; column++) {
+ 298               		.loc 1 112 34 discriminator 3 view .LVU48
+ 299 0032 82E0      		ldi r24,2
+ 300 0034 A80E      		add r10,r24
+ 301 0036 B11C      		adc r11,__zero_reg__
+ 302 0038 1F5F      		subi r17,lo8(-(1))
+ 112:quantum/dynamic_keymap.c ****             for (int column = 0; column < MATRIX_COLS; column++) {
+ 303               		.loc 1 112 13 is_stmt 0 discriminator 3 view .LVU49
+ 304 003a 1B30      		cpi r17,lo8(11)
+ 305 003c 01F4      		brne .L7
+ 306               	.LBE4:
+ 111:quantum/dynamic_keymap.c ****         for (int row = 0; row < MATRIX_ROWS; row++) {
+ 307               		.loc 1 111 46 is_stmt 1 discriminator 2 view .LVU50
+ 111:quantum/dynamic_keymap.c ****         for (int row = 0; row < MATRIX_ROWS; row++) {
+ 308               		.loc 1 111 27 discriminator 2 view .LVU51
+ 309 003e 86E1      		ldi r24,22
+ 310 0040 E80E      		add r14,r24
+ 311 0042 F11C      		adc r15,__zero_reg__
+ 312 0044 CF5F      		subi r28,lo8(-(1))
+ 111:quantum/dynamic_keymap.c ****         for (int row = 0; row < MATRIX_ROWS; row++) {
+ 313               		.loc 1 111 9 is_stmt 0 discriminator 2 view .LVU52
+ 314 0046 C730      		cpi r28,lo8(7)
+ 315 0048 01F0      		breq .L8
+ 316               	.L10:
+ 317               	.LVL22:
+ 318               	.LBB6:
+ 112:quantum/dynamic_keymap.c ****             for (int column = 0; column < MATRIX_COLS; column++) {
+ 319               		.loc 1 112 34 is_stmt 1 view .LVU53
+ 320               	.LBE6:
+ 321               	.LBE7:
+ 322               	.LBE9:
+ 106:quantum/dynamic_keymap.c ****     // Reset the keymaps in EEPROM to what is in flash.
+ 323               		.loc 1 106 33 is_stmt 0 view .LVU54
+ 324 004a 5701      		movw r10,r14
+ 325 004c 10E0      		ldi r17,0
+ 326 004e 00C0      		rjmp .L7
+ 327               	.LVL23:
+ 328               	.L8:
+ 329               	.LBB10:
+ 110:quantum/dynamic_keymap.c ****         for (int row = 0; row < MATRIX_ROWS; row++) {
+ 330               		.loc 1 110 61 is_stmt 1 discriminator 2 view .LVU55
+ 110:quantum/dynamic_keymap.c ****         for (int row = 0; row < MATRIX_ROWS; row++) {
+ 331               		.loc 1 110 25 discriminator 2 view .LVU56
+ 332 0050 DF5F      		subi r29,lo8(-(1))
+ 333 0052 8AE9      		ldi r24,-102
+ 334 0054 C80E      		add r12,r24
+ 335 0056 D11C      		adc r13,__zero_reg__
+ 110:quantum/dynamic_keymap.c ****         for (int row = 0; row < MATRIX_ROWS; row++) {
+ 336               		.loc 1 110 5 is_stmt 0 discriminator 2 view .LVU57
+ 337 0058 D430      		cpi r29,lo8(4)
+ 338 005a 01F4      		brne .L6
+ 339               	/* epilogue start */
+ 340               	.LBE10:
+ 114:quantum/dynamic_keymap.c ****             }
+ 115:quantum/dynamic_keymap.c ****         }
+ 116:quantum/dynamic_keymap.c ****     }
+ 117:quantum/dynamic_keymap.c **** }
+ 341               		.loc 1 117 1 view .LVU58
+ 342 005c DF91      		pop r29
+ 343 005e CF91      		pop r28
+ 344 0060 1F91      		pop r17
+ 345 0062 FF90      		pop r15
+ 346 0064 EF90      		pop r14
+ 347 0066 DF90      		pop r13
+ 348 0068 CF90      		pop r12
+ 349 006a BF90      		pop r11
+ 350 006c AF90      		pop r10
+ 351 006e 0895      		ret
+ 352               		.cfi_endproc
+ 353               	.LFE121:
+ 355               		.section	.text.dynamic_keymap_get_buffer,"ax",@progbits
+ 356               	.global	dynamic_keymap_get_buffer
+ 358               	dynamic_keymap_get_buffer:
+ 359               	.LVL24:
+ 360               	.LFB122:
+ 118:quantum/dynamic_keymap.c **** 
+ 119:quantum/dynamic_keymap.c **** void dynamic_keymap_get_buffer(uint16_t offset, uint16_t size, uint8_t *data) {
+ 361               		.loc 1 119 79 is_stmt 1 view -0
+ 362               		.cfi_startproc
+ 363               		.loc 1 119 79 is_stmt 0 view .LVU60
+ 364 0000 EF92      		push r14
+ 365               	.LCFI17:
+ 366               		.cfi_def_cfa_offset 3
+ 367               		.cfi_offset 14, -2
+ 368 0002 FF92      		push r15
+ 369               	.LCFI18:
+ 370               		.cfi_def_cfa_offset 4
+ 371               		.cfi_offset 15, -3
+ 372 0004 0F93      		push r16
+ 373               	.LCFI19:
+ 374               		.cfi_def_cfa_offset 5
+ 375               		.cfi_offset 16, -4
+ 376 0006 1F93      		push r17
+ 377               	.LCFI20:
+ 378               		.cfi_def_cfa_offset 6
+ 379               		.cfi_offset 17, -5
+ 380 0008 CF93      		push r28
+ 381               	.LCFI21:
+ 382               		.cfi_def_cfa_offset 7
+ 383               		.cfi_offset 28, -6
+ 384 000a DF93      		push r29
+ 385               	.LCFI22:
+ 386               		.cfi_def_cfa_offset 8
+ 387               		.cfi_offset 29, -7
+ 388               	/* prologue: function */
+ 389               	/* frame size = 0 */
+ 390               	/* stack size = 6 */
+ 391               	.L__stack_usage = 6
+ 392 000c EC01      		movw r28,r24
+ 393 000e 8A01      		movw r16,r20
+ 120:quantum/dynamic_keymap.c ****     uint16_t dynamic_keymap_eeprom_size = DYNAMIC_KEYMAP_LAYER_COUNT * MATRIX_ROWS * MATRIX_COLS * 
+ 394               		.loc 1 120 5 is_stmt 1 view .LVU61
+ 395               	.LVL25:
+ 121:quantum/dynamic_keymap.c ****     void *   source                     = (void *)(DYNAMIC_KEYMAP_EEPROM_ADDR + offset);
+ 396               		.loc 1 121 5 view .LVU62
+ 122:quantum/dynamic_keymap.c ****     uint8_t *target                     = data;
+ 397               		.loc 1 122 5 view .LVU63
+ 123:quantum/dynamic_keymap.c ****     for (uint16_t i = 0; i < size; i++) {
+ 398               		.loc 1 123 5 view .LVU64
+ 399               	.LBB11:
+ 400               		.loc 1 123 10 view .LVU65
+ 401               		.loc 1 123 10 is_stmt 0 view .LVU66
+ 402 0010 7C01      		movw r14,r24
+ 403 0012 E60E      		add r14,r22
+ 404 0014 F71E      		adc r15,r23
+ 405               	.LVL26:
+ 406               	.L13:
+ 407               		.loc 1 123 10 view .LVU67
+ 408 0016 CE01      		movw r24,r28
+ 409 0018 8796      		adiw r24,39
+ 410               	.LVL27:
+ 411               		.loc 1 123 26 is_stmt 1 discriminator 1 view .LVU68
+ 412               		.loc 1 123 5 is_stmt 0 discriminator 1 view .LVU69
+ 413 001a CE15      		cp r28,r14
+ 414 001c DF05      		cpc r29,r15
+ 415 001e 01F4      		brne .L16
+ 416               	/* epilogue start */
+ 417               		.loc 1 123 5 discriminator 1 view .LVU70
+ 418               	.LBE11:
+ 124:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 125:quantum/dynamic_keymap.c ****             *target = eeprom_read_byte(source);
+ 126:quantum/dynamic_keymap.c ****         } else {
+ 127:quantum/dynamic_keymap.c ****             *target = 0x00;
+ 128:quantum/dynamic_keymap.c ****         }
+ 129:quantum/dynamic_keymap.c ****         source++;
+ 130:quantum/dynamic_keymap.c ****         target++;
+ 131:quantum/dynamic_keymap.c ****     }
+ 132:quantum/dynamic_keymap.c **** }
+ 419               		.loc 1 132 1 view .LVU71
+ 420 0020 DF91      		pop r29
+ 421 0022 CF91      		pop r28
+ 422 0024 1F91      		pop r17
+ 423 0026 0F91      		pop r16
+ 424               	.LVL28:
+ 425               		.loc 1 132 1 view .LVU72
+ 426 0028 FF90      		pop r15
+ 427 002a EF90      		pop r14
+ 428 002c 0895      		ret
+ 429               	.LVL29:
+ 430               	.L16:
+ 431               	.LBB12:
+ 124:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 432               		.loc 1 124 9 is_stmt 1 view .LVU73
+ 124:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 433               		.loc 1 124 12 is_stmt 0 view .LVU74
+ 434 002e C836      		cpi r28,104
+ 435 0030 22E0      		ldi r18,2
+ 436 0032 D207      		cpc r29,r18
+ 437 0034 00F4      		brsh .L14
+ 125:quantum/dynamic_keymap.c ****         } else {
+ 438               		.loc 1 125 13 is_stmt 1 view .LVU75
+ 125:quantum/dynamic_keymap.c ****         } else {
+ 439               		.loc 1 125 23 is_stmt 0 view .LVU76
+ 440 0036 0E94 0000 		call eeprom_read_byte
+ 441               	.LVL30:
+ 125:quantum/dynamic_keymap.c ****         } else {
+ 442               		.loc 1 125 21 view .LVU77
+ 443 003a F801      		movw r30,r16
+ 444 003c 8083      		st Z,r24
+ 445               	.L15:
+ 129:quantum/dynamic_keymap.c ****         target++;
+ 446               		.loc 1 129 9 is_stmt 1 discriminator 2 view .LVU78
+ 447               	.LVL31:
+ 130:quantum/dynamic_keymap.c ****     }
+ 448               		.loc 1 130 9 discriminator 2 view .LVU79
+ 130:quantum/dynamic_keymap.c ****     }
+ 449               		.loc 1 130 15 is_stmt 0 discriminator 2 view .LVU80
+ 450 003e 0F5F      		subi r16,-1
+ 451 0040 1F4F      		sbci r17,-1
+ 452               	.LVL32:
+ 123:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 453               		.loc 1 123 36 is_stmt 1 discriminator 2 view .LVU81
+ 123:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 454               		.loc 1 123 36 is_stmt 0 discriminator 2 view .LVU82
+ 455 0042 2196      		adiw r28,1
+ 456               	.LVL33:
+ 123:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 457               		.loc 1 123 36 discriminator 2 view .LVU83
+ 458 0044 00C0      		rjmp .L13
+ 459               	.LVL34:
+ 460               	.L14:
+ 127:quantum/dynamic_keymap.c ****         }
+ 461               		.loc 1 127 13 is_stmt 1 view .LVU84
+ 127:quantum/dynamic_keymap.c ****         }
+ 462               		.loc 1 127 21 is_stmt 0 view .LVU85
+ 463 0046 F801      		movw r30,r16
+ 464 0048 1082      		st Z,__zero_reg__
+ 465 004a 00C0      		rjmp .L15
+ 466               	.LBE12:
+ 467               		.cfi_endproc
+ 468               	.LFE122:
+ 470               		.section	.text.dynamic_keymap_set_buffer,"ax",@progbits
+ 471               	.global	dynamic_keymap_set_buffer
+ 473               	dynamic_keymap_set_buffer:
+ 474               	.LVL35:
+ 475               	.LFB123:
+ 133:quantum/dynamic_keymap.c **** 
+ 134:quantum/dynamic_keymap.c **** void dynamic_keymap_set_buffer(uint16_t offset, uint16_t size, uint8_t *data) {
+ 476               		.loc 1 134 79 is_stmt 1 view -0
+ 477               		.cfi_startproc
+ 478               		.loc 1 134 79 is_stmt 0 view .LVU87
+ 479 0000 CF92      		push r12
+ 480               	.LCFI23:
+ 481               		.cfi_def_cfa_offset 3
+ 482               		.cfi_offset 12, -2
+ 483 0002 DF92      		push r13
+ 484               	.LCFI24:
+ 485               		.cfi_def_cfa_offset 4
+ 486               		.cfi_offset 13, -3
+ 487 0004 EF92      		push r14
+ 488               	.LCFI25:
+ 489               		.cfi_def_cfa_offset 5
+ 490               		.cfi_offset 14, -4
+ 491 0006 FF92      		push r15
+ 492               	.LCFI26:
+ 493               		.cfi_def_cfa_offset 6
+ 494               		.cfi_offset 15, -5
+ 495 0008 0F93      		push r16
+ 496               	.LCFI27:
+ 497               		.cfi_def_cfa_offset 7
+ 498               		.cfi_offset 16, -6
+ 499 000a 1F93      		push r17
+ 500               	.LCFI28:
+ 501               		.cfi_def_cfa_offset 8
+ 502               		.cfi_offset 17, -7
+ 503 000c CF93      		push r28
+ 504               	.LCFI29:
+ 505               		.cfi_def_cfa_offset 9
+ 506               		.cfi_offset 28, -8
+ 507 000e DF93      		push r29
+ 508               	.LCFI30:
+ 509               		.cfi_def_cfa_offset 10
+ 510               		.cfi_offset 29, -9
+ 511               	/* prologue: function */
+ 512               	/* frame size = 0 */
+ 513               	/* stack size = 8 */
+ 514               	.L__stack_usage = 8
+ 515 0010 7C01      		movw r14,r24
+ 516 0012 6A01      		movw r12,r20
+ 135:quantum/dynamic_keymap.c ****     uint16_t dynamic_keymap_eeprom_size = DYNAMIC_KEYMAP_LAYER_COUNT * MATRIX_ROWS * MATRIX_COLS * 
+ 517               		.loc 1 135 5 is_stmt 1 view .LVU88
+ 518               	.LVL36:
+ 136:quantum/dynamic_keymap.c ****     void *   target                     = (void *)(DYNAMIC_KEYMAP_EEPROM_ADDR + offset);
+ 519               		.loc 1 136 5 view .LVU89
+ 137:quantum/dynamic_keymap.c ****     uint8_t *source                     = data;
+ 520               		.loc 1 137 5 view .LVU90
+ 138:quantum/dynamic_keymap.c ****     for (uint16_t i = 0; i < size; i++) {
+ 521               		.loc 1 138 5 view .LVU91
+ 522               	.LBB13:
+ 523               		.loc 1 138 10 view .LVU92
+ 524               		.loc 1 138 10 is_stmt 0 view .LVU93
+ 525 0014 8C01      		movw r16,r24
+ 526 0016 060F      		add r16,r22
+ 527 0018 171F      		adc r17,r23
+ 528               		.loc 1 138 5 view .LVU94
+ 529 001a EC01      		movw r28,r24
+ 530               	.LVL37:
+ 531               	.L18:
+ 532               		.loc 1 138 5 view .LVU95
+ 533 001c CE01      		movw r24,r28
+ 534 001e 8796      		adiw r24,39
+ 535               	.LVL38:
+ 536               		.loc 1 138 26 is_stmt 1 discriminator 1 view .LVU96
+ 537               		.loc 1 138 5 is_stmt 0 discriminator 1 view .LVU97
+ 538 0020 C017      		cp r28,r16
+ 539 0022 D107      		cpc r29,r17
+ 540 0024 01F4      		brne .L20
+ 541               	/* epilogue start */
+ 542               	.LBE13:
+ 139:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 140:quantum/dynamic_keymap.c ****             eeprom_update_byte(target, *source);
+ 141:quantum/dynamic_keymap.c ****         }
+ 142:quantum/dynamic_keymap.c ****         source++;
+ 143:quantum/dynamic_keymap.c ****         target++;
+ 144:quantum/dynamic_keymap.c ****     }
+ 145:quantum/dynamic_keymap.c **** }
+ 543               		.loc 1 145 1 view .LVU98
+ 544 0026 DF91      		pop r29
+ 545 0028 CF91      		pop r28
+ 546               	.LVL39:
+ 547               		.loc 1 145 1 view .LVU99
+ 548 002a 1F91      		pop r17
+ 549 002c 0F91      		pop r16
+ 550 002e FF90      		pop r15
+ 551 0030 EF90      		pop r14
+ 552               	.LVL40:
+ 553               		.loc 1 145 1 view .LVU100
+ 554 0032 DF90      		pop r13
+ 555 0034 CF90      		pop r12
+ 556               	.LVL41:
+ 557               		.loc 1 145 1 view .LVU101
+ 558 0036 0895      		ret
+ 559               	.LVL42:
+ 560               	.L20:
+ 561               	.LBB14:
+ 139:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 562               		.loc 1 139 9 is_stmt 1 view .LVU102
+ 139:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 563               		.loc 1 139 12 is_stmt 0 view .LVU103
+ 564 0038 C836      		cpi r28,104
+ 565 003a 22E0      		ldi r18,2
+ 566 003c D207      		cpc r29,r18
+ 567 003e 00F4      		brsh .L19
+ 140:quantum/dynamic_keymap.c ****         }
+ 568               		.loc 1 140 13 is_stmt 1 view .LVU104
+ 569 0040 FE01      		movw r30,r28
+ 570 0042 EE19      		sub r30,r14
+ 571 0044 FF09      		sbc r31,r15
+ 572 0046 EC0D      		add r30,r12
+ 573 0048 FD1D      		adc r31,r13
+ 574 004a 6081      		ld r22,Z
+ 575 004c 0E94 0000 		call eeprom_update_byte
+ 576               	.LVL43:
+ 577               	.L19:
+ 142:quantum/dynamic_keymap.c ****         target++;
+ 578               		.loc 1 142 9 discriminator 2 view .LVU105
+ 143:quantum/dynamic_keymap.c ****     }
+ 579               		.loc 1 143 9 discriminator 2 view .LVU106
+ 138:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 580               		.loc 1 138 36 discriminator 2 view .LVU107
+ 138:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 581               		.loc 1 138 36 is_stmt 0 discriminator 2 view .LVU108
+ 582 0050 2196      		adiw r28,1
+ 583               	.LVL44:
+ 138:quantum/dynamic_keymap.c ****         if (offset + i < dynamic_keymap_eeprom_size) {
+ 584               		.loc 1 138 36 discriminator 2 view .LVU109
+ 585 0052 00C0      		rjmp .L18
+ 586               	.LBE14:
+ 587               		.cfi_endproc
+ 588               	.LFE123:
+ 590               		.section	.text.keymap_key_to_keycode,"ax",@progbits
+ 591               	.global	keymap_key_to_keycode
+ 593               	keymap_key_to_keycode:
+ 594               	.LVL45:
+ 595               	.LFB124:
+ 146:quantum/dynamic_keymap.c **** 
+ 147:quantum/dynamic_keymap.c **** // This overrides the one in quantum/keymap_common.c
+ 148:quantum/dynamic_keymap.c **** uint16_t keymap_key_to_keycode(uint8_t layer, keypos_t key) {
+ 596               		.loc 1 148 61 is_stmt 1 view -0
+ 597               		.cfi_startproc
+ 598               	/* prologue: function */
+ 599               	/* frame size = 0 */
+ 600               	/* stack size = 0 */
+ 601               	.L__stack_usage = 0
+ 602               		.loc 1 148 61 is_stmt 0 view .LVU111
+ 603 0000 462F      		mov r20,r22
+ 604               	.LVL46:
+ 149:quantum/dynamic_keymap.c ****     if (layer < DYNAMIC_KEYMAP_LAYER_COUNT && key.row < MATRIX_ROWS && key.col < MATRIX_COLS) {
+ 605               		.loc 1 149 5 is_stmt 1 view .LVU112
+ 606               		.loc 1 149 8 is_stmt 0 view .LVU113
+ 607 0002 8430      		cpi r24,lo8(4)
+ 608 0004 00F4      		brsh .L21
+ 609               		.loc 1 149 44 discriminator 1 view .LVU114
+ 610 0006 7730      		cpi r23,lo8(7)
+ 611 0008 00F4      		brsh .L21
+ 612               		.loc 1 149 69 discriminator 2 view .LVU115
+ 613 000a 6B30      		cpi r22,lo8(11)
+ 614 000c 00F4      		brsh .L21
+ 150:quantum/dynamic_keymap.c ****         return dynamic_keymap_get_keycode(layer, key.row, key.col);
+ 615               		.loc 1 150 9 is_stmt 1 view .LVU116
+ 616               		.loc 1 150 16 is_stmt 0 view .LVU117
+ 617 000e 672F      		mov r22,r23
+ 618 0010 0C94 0000 		jmp dynamic_keymap_get_keycode
+ 619               	.LVL47:
+ 620               	.L21:
+ 151:quantum/dynamic_keymap.c ****     } else {
+ 152:quantum/dynamic_keymap.c ****         return KC_NO;
+ 153:quantum/dynamic_keymap.c ****     }
+ 154:quantum/dynamic_keymap.c **** }
+ 621               		.loc 1 154 1 view .LVU118
+ 622 0014 90E0      		ldi r25,0
+ 623 0016 80E0      		ldi r24,0
+ 624               	.LVL48:
+ 625               	/* epilogue start */
+ 626               		.loc 1 154 1 view .LVU119
+ 627 0018 0895      		ret
+ 628               		.cfi_endproc
+ 629               	.LFE124:
+ 631               		.section	.text.dynamic_keymap_macro_get_count,"ax",@progbits
+ 632               	.global	dynamic_keymap_macro_get_count
+ 634               	dynamic_keymap_macro_get_count:
+ 635               	.LFB125:
+ 155:quantum/dynamic_keymap.c **** 
+ 156:quantum/dynamic_keymap.c **** uint8_t dynamic_keymap_macro_get_count(void) { return DYNAMIC_KEYMAP_MACRO_COUNT; }
+ 636               		.loc 1 156 46 is_stmt 1 view -0
+ 637               		.cfi_startproc
+ 638               	/* prologue: function */
+ 639               	/* frame size = 0 */
+ 640               	/* stack size = 0 */
+ 641               	.L__stack_usage = 0
+ 642               		.loc 1 156 48 view .LVU121
+ 643               		.loc 1 156 1 is_stmt 0 view .LVU122
+ 644 0000 80E1      		ldi r24,lo8(16)
+ 645               	/* epilogue start */
+ 646 0002 0895      		ret
+ 647               		.cfi_endproc
+ 648               	.LFE125:
+ 650               		.section	.text.dynamic_keymap_macro_get_buffer_size,"ax",@progbits
+ 651               	.global	dynamic_keymap_macro_get_buffer_size
+ 653               	dynamic_keymap_macro_get_buffer_size:
+ 654               	.LFB126:
+ 157:quantum/dynamic_keymap.c **** 
+ 158:quantum/dynamic_keymap.c **** uint16_t dynamic_keymap_macro_get_buffer_size(void) { return DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE; }
+ 655               		.loc 1 158 53 is_stmt 1 view -0
+ 656               		.cfi_startproc
+ 657               	/* prologue: function */
+ 658               	/* frame size = 0 */
+ 659               	/* stack size = 0 */
+ 660               	.L__stack_usage = 0
+ 661               		.loc 1 158 55 view .LVU124
+ 662               		.loc 1 158 1 is_stmt 0 view .LVU125
+ 663 0000 81E7      		ldi r24,lo8(113)
+ 664 0002 91E0      		ldi r25,lo8(1)
+ 665               	/* epilogue start */
+ 666 0004 0895      		ret
+ 667               		.cfi_endproc
+ 668               	.LFE126:
+ 670               		.section	.text.dynamic_keymap_macro_get_buffer,"ax",@progbits
+ 671               	.global	dynamic_keymap_macro_get_buffer
+ 673               	dynamic_keymap_macro_get_buffer:
+ 674               	.LVL49:
+ 675               	.LFB127:
+ 159:quantum/dynamic_keymap.c **** 
+ 160:quantum/dynamic_keymap.c **** void dynamic_keymap_macro_get_buffer(uint16_t offset, uint16_t size, uint8_t *data) {
+ 676               		.loc 1 160 85 is_stmt 1 view -0
+ 677               		.cfi_startproc
+ 678               		.loc 1 160 85 is_stmt 0 view .LVU127
+ 679 0000 EF92      		push r14
+ 680               	.LCFI31:
+ 681               		.cfi_def_cfa_offset 3
+ 682               		.cfi_offset 14, -2
+ 683 0002 FF92      		push r15
+ 684               	.LCFI32:
+ 685               		.cfi_def_cfa_offset 4
+ 686               		.cfi_offset 15, -3
+ 687 0004 0F93      		push r16
+ 688               	.LCFI33:
+ 689               		.cfi_def_cfa_offset 5
+ 690               		.cfi_offset 16, -4
+ 691 0006 1F93      		push r17
+ 692               	.LCFI34:
+ 693               		.cfi_def_cfa_offset 6
+ 694               		.cfi_offset 17, -5
+ 695 0008 CF93      		push r28
+ 696               	.LCFI35:
+ 697               		.cfi_def_cfa_offset 7
+ 698               		.cfi_offset 28, -6
+ 699 000a DF93      		push r29
+ 700               	.LCFI36:
+ 701               		.cfi_def_cfa_offset 8
+ 702               		.cfi_offset 29, -7
+ 703               	/* prologue: function */
+ 704               	/* frame size = 0 */
+ 705               	/* stack size = 6 */
+ 706               	.L__stack_usage = 6
+ 707 000c EC01      		movw r28,r24
+ 708 000e 8A01      		movw r16,r20
+ 161:quantum/dynamic_keymap.c ****     void *   source = (void *)(DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR + offset);
+ 709               		.loc 1 161 5 is_stmt 1 view .LVU128
+ 710               	.LVL50:
+ 162:quantum/dynamic_keymap.c ****     uint8_t *target = data;
+ 711               		.loc 1 162 5 view .LVU129
+ 163:quantum/dynamic_keymap.c ****     for (uint16_t i = 0; i < size; i++) {
+ 712               		.loc 1 163 5 view .LVU130
+ 713               	.LBB15:
+ 714               		.loc 1 163 10 view .LVU131
+ 715               		.loc 1 163 10 is_stmt 0 view .LVU132
+ 716 0010 7C01      		movw r14,r24
+ 717 0012 E60E      		add r14,r22
+ 718 0014 F71E      		adc r15,r23
+ 719               	.LVL51:
+ 720               	.L29:
+ 721               		.loc 1 163 10 view .LVU133
+ 722 0016 CE01      		movw r24,r28
+ 723 0018 8157      		subi r24,113
+ 724 001a 9D4F      		sbci r25,-3
+ 725               	.LVL52:
+ 726               		.loc 1 163 26 is_stmt 1 discriminator 1 view .LVU134
+ 727               		.loc 1 163 5 is_stmt 0 discriminator 1 view .LVU135
+ 728 001c CE15      		cp r28,r14
+ 729 001e DF05      		cpc r29,r15
+ 730 0020 01F4      		brne .L32
+ 731               	/* epilogue start */
+ 732               		.loc 1 163 5 discriminator 1 view .LVU136
+ 733               	.LBE15:
+ 164:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 165:quantum/dynamic_keymap.c ****             *target = eeprom_read_byte(source);
+ 166:quantum/dynamic_keymap.c ****         } else {
+ 167:quantum/dynamic_keymap.c ****             *target = 0x00;
+ 168:quantum/dynamic_keymap.c ****         }
+ 169:quantum/dynamic_keymap.c ****         source++;
+ 170:quantum/dynamic_keymap.c ****         target++;
+ 171:quantum/dynamic_keymap.c ****     }
+ 172:quantum/dynamic_keymap.c **** }
+ 734               		.loc 1 172 1 view .LVU137
+ 735 0022 DF91      		pop r29
+ 736 0024 CF91      		pop r28
+ 737 0026 1F91      		pop r17
+ 738 0028 0F91      		pop r16
+ 739               	.LVL53:
+ 740               		.loc 1 172 1 view .LVU138
+ 741 002a FF90      		pop r15
+ 742 002c EF90      		pop r14
+ 743 002e 0895      		ret
+ 744               	.LVL54:
+ 745               	.L32:
+ 746               	.LBB16:
+ 164:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 747               		.loc 1 164 9 is_stmt 1 view .LVU139
+ 164:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 748               		.loc 1 164 12 is_stmt 0 view .LVU140
+ 749 0030 C137      		cpi r28,113
+ 750 0032 21E0      		ldi r18,1
+ 751 0034 D207      		cpc r29,r18
+ 752 0036 00F4      		brsh .L30
+ 165:quantum/dynamic_keymap.c ****         } else {
+ 753               		.loc 1 165 13 is_stmt 1 view .LVU141
+ 165:quantum/dynamic_keymap.c ****         } else {
+ 754               		.loc 1 165 23 is_stmt 0 view .LVU142
+ 755 0038 0E94 0000 		call eeprom_read_byte
+ 756               	.LVL55:
+ 165:quantum/dynamic_keymap.c ****         } else {
+ 757               		.loc 1 165 21 view .LVU143
+ 758 003c F801      		movw r30,r16
+ 759 003e 8083      		st Z,r24
+ 760               	.L31:
+ 169:quantum/dynamic_keymap.c ****         target++;
+ 761               		.loc 1 169 9 is_stmt 1 discriminator 2 view .LVU144
+ 762               	.LVL56:
+ 170:quantum/dynamic_keymap.c ****     }
+ 763               		.loc 1 170 9 discriminator 2 view .LVU145
+ 170:quantum/dynamic_keymap.c ****     }
+ 764               		.loc 1 170 15 is_stmt 0 discriminator 2 view .LVU146
+ 765 0040 0F5F      		subi r16,-1
+ 766 0042 1F4F      		sbci r17,-1
+ 767               	.LVL57:
+ 163:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 768               		.loc 1 163 36 is_stmt 1 discriminator 2 view .LVU147
+ 163:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 769               		.loc 1 163 36 is_stmt 0 discriminator 2 view .LVU148
+ 770 0044 2196      		adiw r28,1
+ 771               	.LVL58:
+ 163:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 772               		.loc 1 163 36 discriminator 2 view .LVU149
+ 773 0046 00C0      		rjmp .L29
+ 774               	.LVL59:
+ 775               	.L30:
+ 167:quantum/dynamic_keymap.c ****         }
+ 776               		.loc 1 167 13 is_stmt 1 view .LVU150
+ 167:quantum/dynamic_keymap.c ****         }
+ 777               		.loc 1 167 21 is_stmt 0 view .LVU151
+ 778 0048 F801      		movw r30,r16
+ 779 004a 1082      		st Z,__zero_reg__
+ 780 004c 00C0      		rjmp .L31
+ 781               	.LBE16:
+ 782               		.cfi_endproc
+ 783               	.LFE127:
+ 785               		.section	.text.dynamic_keymap_macro_set_buffer,"ax",@progbits
+ 786               	.global	dynamic_keymap_macro_set_buffer
+ 788               	dynamic_keymap_macro_set_buffer:
+ 789               	.LVL60:
+ 790               	.LFB128:
+ 173:quantum/dynamic_keymap.c **** 
+ 174:quantum/dynamic_keymap.c **** void dynamic_keymap_macro_set_buffer(uint16_t offset, uint16_t size, uint8_t *data) {
+ 791               		.loc 1 174 85 is_stmt 1 view -0
+ 792               		.cfi_startproc
+ 793               		.loc 1 174 85 is_stmt 0 view .LVU153
+ 794 0000 CF92      		push r12
+ 795               	.LCFI37:
+ 796               		.cfi_def_cfa_offset 3
+ 797               		.cfi_offset 12, -2
+ 798 0002 DF92      		push r13
+ 799               	.LCFI38:
+ 800               		.cfi_def_cfa_offset 4
+ 801               		.cfi_offset 13, -3
+ 802 0004 EF92      		push r14
+ 803               	.LCFI39:
+ 804               		.cfi_def_cfa_offset 5
+ 805               		.cfi_offset 14, -4
+ 806 0006 FF92      		push r15
+ 807               	.LCFI40:
+ 808               		.cfi_def_cfa_offset 6
+ 809               		.cfi_offset 15, -5
+ 810 0008 0F93      		push r16
+ 811               	.LCFI41:
+ 812               		.cfi_def_cfa_offset 7
+ 813               		.cfi_offset 16, -6
+ 814 000a 1F93      		push r17
+ 815               	.LCFI42:
+ 816               		.cfi_def_cfa_offset 8
+ 817               		.cfi_offset 17, -7
+ 818 000c CF93      		push r28
+ 819               	.LCFI43:
+ 820               		.cfi_def_cfa_offset 9
+ 821               		.cfi_offset 28, -8
+ 822 000e DF93      		push r29
+ 823               	.LCFI44:
+ 824               		.cfi_def_cfa_offset 10
+ 825               		.cfi_offset 29, -9
+ 826               	/* prologue: function */
+ 827               	/* frame size = 0 */
+ 828               	/* stack size = 8 */
+ 829               	.L__stack_usage = 8
+ 830 0010 7C01      		movw r14,r24
+ 831 0012 6A01      		movw r12,r20
+ 175:quantum/dynamic_keymap.c ****     void *   target = (void *)(DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR + offset);
+ 832               		.loc 1 175 5 is_stmt 1 view .LVU154
+ 833               	.LVL61:
+ 176:quantum/dynamic_keymap.c ****     uint8_t *source = data;
+ 834               		.loc 1 176 5 view .LVU155
+ 177:quantum/dynamic_keymap.c ****     for (uint16_t i = 0; i < size; i++) {
+ 835               		.loc 1 177 5 view .LVU156
+ 836               	.LBB17:
+ 837               		.loc 1 177 10 view .LVU157
+ 838               		.loc 1 177 10 is_stmt 0 view .LVU158
+ 839 0014 8C01      		movw r16,r24
+ 840 0016 060F      		add r16,r22
+ 841 0018 171F      		adc r17,r23
+ 842               		.loc 1 177 5 view .LVU159
+ 843 001a EC01      		movw r28,r24
+ 844               	.LVL62:
+ 845               	.L34:
+ 846               		.loc 1 177 5 view .LVU160
+ 847 001c CE01      		movw r24,r28
+ 848 001e 8157      		subi r24,113
+ 849 0020 9D4F      		sbci r25,-3
+ 850               	.LVL63:
+ 851               		.loc 1 177 26 is_stmt 1 discriminator 1 view .LVU161
+ 852               		.loc 1 177 5 is_stmt 0 discriminator 1 view .LVU162
+ 853 0022 C017      		cp r28,r16
+ 854 0024 D107      		cpc r29,r17
+ 855 0026 01F4      		brne .L36
+ 856               	/* epilogue start */
+ 857               	.LBE17:
+ 178:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 179:quantum/dynamic_keymap.c ****             eeprom_update_byte(target, *source);
+ 180:quantum/dynamic_keymap.c ****         }
+ 181:quantum/dynamic_keymap.c ****         source++;
+ 182:quantum/dynamic_keymap.c ****         target++;
+ 183:quantum/dynamic_keymap.c ****     }
+ 184:quantum/dynamic_keymap.c **** }
+ 858               		.loc 1 184 1 view .LVU163
+ 859 0028 DF91      		pop r29
+ 860 002a CF91      		pop r28
+ 861               	.LVL64:
+ 862               		.loc 1 184 1 view .LVU164
+ 863 002c 1F91      		pop r17
+ 864 002e 0F91      		pop r16
+ 865 0030 FF90      		pop r15
+ 866 0032 EF90      		pop r14
+ 867               	.LVL65:
+ 868               		.loc 1 184 1 view .LVU165
+ 869 0034 DF90      		pop r13
+ 870 0036 CF90      		pop r12
+ 871               	.LVL66:
+ 872               		.loc 1 184 1 view .LVU166
+ 873 0038 0895      		ret
+ 874               	.LVL67:
+ 875               	.L36:
+ 876               	.LBB18:
+ 178:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 877               		.loc 1 178 9 is_stmt 1 view .LVU167
+ 178:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 878               		.loc 1 178 12 is_stmt 0 view .LVU168
+ 879 003a C137      		cpi r28,113
+ 880 003c 21E0      		ldi r18,1
+ 881 003e D207      		cpc r29,r18
+ 882 0040 00F4      		brsh .L35
+ 179:quantum/dynamic_keymap.c ****         }
+ 883               		.loc 1 179 13 is_stmt 1 view .LVU169
+ 884 0042 FE01      		movw r30,r28
+ 885 0044 EE19      		sub r30,r14
+ 886 0046 FF09      		sbc r31,r15
+ 887 0048 EC0D      		add r30,r12
+ 888 004a FD1D      		adc r31,r13
+ 889 004c 6081      		ld r22,Z
+ 890 004e 0E94 0000 		call eeprom_update_byte
+ 891               	.LVL68:
+ 892               	.L35:
+ 181:quantum/dynamic_keymap.c ****         target++;
+ 893               		.loc 1 181 9 discriminator 2 view .LVU170
+ 182:quantum/dynamic_keymap.c ****     }
+ 894               		.loc 1 182 9 discriminator 2 view .LVU171
+ 177:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 895               		.loc 1 177 36 discriminator 2 view .LVU172
+ 177:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 896               		.loc 1 177 36 is_stmt 0 discriminator 2 view .LVU173
+ 897 0052 2196      		adiw r28,1
+ 898               	.LVL69:
+ 177:quantum/dynamic_keymap.c ****         if (offset + i < DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE) {
+ 899               		.loc 1 177 36 discriminator 2 view .LVU174
+ 900 0054 00C0      		rjmp .L34
+ 901               	.LBE18:
+ 902               		.cfi_endproc
+ 903               	.LFE128:
+ 905               		.section	.text.dynamic_keymap_macro_reset,"ax",@progbits
+ 906               	.global	dynamic_keymap_macro_reset
+ 908               	dynamic_keymap_macro_reset:
+ 909               	.LFB129:
+ 185:quantum/dynamic_keymap.c **** 
+ 186:quantum/dynamic_keymap.c **** void dynamic_keymap_macro_reset(void) {
+ 910               		.loc 1 186 39 is_stmt 1 view -0
+ 911               		.cfi_startproc
+ 912 0000 CF93      		push r28
+ 913               	.LCFI45:
+ 914               		.cfi_def_cfa_offset 3
+ 915               		.cfi_offset 28, -2
+ 916 0002 DF93      		push r29
+ 917               	.LCFI46:
+ 918               		.cfi_def_cfa_offset 4
+ 919               		.cfi_offset 29, -3
+ 920               	/* prologue: function */
+ 921               	/* frame size = 0 */
+ 922               	/* stack size = 2 */
+ 923               	.L__stack_usage = 2
+ 187:quantum/dynamic_keymap.c ****     void *p   = (void *)(DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR);
+ 924               		.loc 1 187 5 view .LVU176
+ 925               	.LVL70:
+ 188:quantum/dynamic_keymap.c ****     void *end = (void *)(DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR + DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE);
+ 926               		.loc 1 188 5 view .LVU177
+ 189:quantum/dynamic_keymap.c ****     while (p != end) {
+ 927               		.loc 1 189 5 view .LVU178
+ 928               		.loc 1 189 11 view .LVU179
+ 187:quantum/dynamic_keymap.c ****     void *p   = (void *)(DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR);
+ 929               		.loc 1 187 11 is_stmt 0 view .LVU180
+ 930 0004 CFE8      		ldi r28,lo8(-113)
+ 931 0006 D2E0      		ldi r29,lo8(2)
+ 932               	.LVL71:
+ 933               	.L38:
+ 190:quantum/dynamic_keymap.c ****         eeprom_update_byte(p, 0);
+ 934               		.loc 1 190 9 is_stmt 1 view .LVU181
+ 935 0008 60E0      		ldi r22,0
+ 936 000a CE01      		movw r24,r28
+ 937 000c 0E94 0000 		call eeprom_update_byte
+ 938               	.LVL72:
+ 191:quantum/dynamic_keymap.c ****         ++p;
+ 939               		.loc 1 191 9 view .LVU182
+ 940 0010 2196      		adiw r28,1
+ 941               	.LVL73:
+ 189:quantum/dynamic_keymap.c ****     while (p != end) {
+ 942               		.loc 1 189 11 view .LVU183
+ 943 0012 C115      		cp r28,__zero_reg__
+ 944 0014 84E0      		ldi r24,4
+ 945 0016 D807      		cpc r29,r24
+ 946 0018 01F4      		brne .L38
+ 947               	/* epilogue start */
+ 192:quantum/dynamic_keymap.c ****     }
+ 193:quantum/dynamic_keymap.c **** }
+ 948               		.loc 1 193 1 is_stmt 0 view .LVU184
+ 949 001a DF91      		pop r29
+ 950 001c CF91      		pop r28
+ 951               	.LVL74:
+ 952               		.loc 1 193 1 view .LVU185
+ 953 001e 0895      		ret
+ 954               		.cfi_endproc
+ 955               	.LFE129:
+ 957               		.section	.text.dynamic_keymap_macro_send,"ax",@progbits
+ 958               	.global	dynamic_keymap_macro_send
+ 960               	dynamic_keymap_macro_send:
+ 961               	.LVL75:
+ 962               	.LFB130:
+ 194:quantum/dynamic_keymap.c **** 
+ 195:quantum/dynamic_keymap.c **** void dynamic_keymap_macro_send(uint8_t id) {
+ 963               		.loc 1 195 44 is_stmt 1 view -0
+ 964               		.cfi_startproc
+ 965               		.loc 1 195 44 is_stmt 0 view .LVU187
+ 966 0000 DF92      		push r13
+ 967               	.LCFI47:
+ 968               		.cfi_def_cfa_offset 3
+ 969               		.cfi_offset 13, -2
+ 970 0002 EF92      		push r14
+ 971               	.LCFI48:
+ 972               		.cfi_def_cfa_offset 4
+ 973               		.cfi_offset 14, -3
+ 974 0004 FF92      		push r15
+ 975               	.LCFI49:
+ 976               		.cfi_def_cfa_offset 5
+ 977               		.cfi_offset 15, -4
+ 978 0006 0F93      		push r16
+ 979               	.LCFI50:
+ 980               		.cfi_def_cfa_offset 6
+ 981               		.cfi_offset 16, -5
+ 982 0008 1F93      		push r17
+ 983               	.LCFI51:
+ 984               		.cfi_def_cfa_offset 7
+ 985               		.cfi_offset 17, -6
+ 986 000a CF93      		push r28
+ 987               	.LCFI52:
+ 988               		.cfi_def_cfa_offset 8
+ 989               		.cfi_offset 28, -7
+ 990 000c DF93      		push r29
+ 991               	.LCFI53:
+ 992               		.cfi_def_cfa_offset 9
+ 993               		.cfi_offset 29, -8
+ 994 000e 00D0      		rcall .
+ 995 0010 00D0      		rcall .
+ 996               	.LCFI54:
+ 997               		.cfi_def_cfa_offset 13
+ 998 0012 CDB7      		in r28,__SP_L__
+ 999 0014 DEB7      		in r29,__SP_H__
+ 1000               	.LCFI55:
+ 1001               		.cfi_def_cfa_register 28
+ 1002               	/* prologue: function */
+ 1003               	/* frame size = 4 */
+ 1004               	/* stack size = 11 */
+ 1005               	.L__stack_usage = 11
+ 1006 0016 F82E      		mov r15,r24
+ 196:quantum/dynamic_keymap.c ****     if (id >= DYNAMIC_KEYMAP_MACRO_COUNT) {
+ 1007               		.loc 1 196 5 is_stmt 1 view .LVU188
+ 1008               		.loc 1 196 8 is_stmt 0 view .LVU189
+ 1009 0018 8FE0      		ldi r24,lo8(15)
+ 1010               	.LVL76:
+ 1011               		.loc 1 196 8 view .LVU190
+ 1012 001a 8F15      		cp r24,r15
+ 1013 001c 00F0      		brlo .L40
+ 197:quantum/dynamic_keymap.c ****         return;
+ 198:quantum/dynamic_keymap.c ****     }
+ 199:quantum/dynamic_keymap.c **** 
+ 200:quantum/dynamic_keymap.c ****     // Check the last byte of the buffer.
+ 201:quantum/dynamic_keymap.c ****     // If it's not zero, then we are in the middle
+ 202:quantum/dynamic_keymap.c ****     // of buffer writing, possibly an aborted buffer
+ 203:quantum/dynamic_keymap.c ****     // write. So do nothing.
+ 204:quantum/dynamic_keymap.c ****     void *p = (void *)(DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR + DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE - 1);
+ 1014               		.loc 1 204 5 is_stmt 1 view .LVU191
+ 1015               	.LVL77:
+ 205:quantum/dynamic_keymap.c ****     if (eeprom_read_byte(p) != 0) {
+ 1016               		.loc 1 205 5 view .LVU192
+ 1017               		.loc 1 205 9 is_stmt 0 view .LVU193
+ 1018 001e 8FEF      		ldi r24,lo8(-1)
+ 1019 0020 93E0      		ldi r25,lo8(3)
+ 1020 0022 0E94 0000 		call eeprom_read_byte
+ 1021               	.LVL78:
+ 206:quantum/dynamic_keymap.c ****         return;
+ 207:quantum/dynamic_keymap.c ****     }
+ 208:quantum/dynamic_keymap.c **** 
+ 209:quantum/dynamic_keymap.c ****     // Skip N null characters
+ 210:quantum/dynamic_keymap.c ****     // p will then point to the Nth macro
+ 211:quantum/dynamic_keymap.c ****     p         = (void *)(DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR);
+ 1022               		.loc 1 211 15 view .LVU194
+ 1023 0026 0FE8      		ldi r16,lo8(-113)
+ 1024 0028 12E0      		ldi r17,lo8(2)
+ 205:quantum/dynamic_keymap.c ****     if (eeprom_read_byte(p) != 0) {
+ 1025               		.loc 1 205 8 view .LVU195
+ 1026 002a 8823      		tst r24
+ 1027 002c 01F0      		breq .L42
+ 1028               	.LVL79:
+ 1029               	.L40:
+ 1030               	/* epilogue start */
+ 212:quantum/dynamic_keymap.c ****     void *end = (void *)(DYNAMIC_KEYMAP_MACRO_EEPROM_ADDR + DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE);
+ 213:quantum/dynamic_keymap.c ****     while (id > 0) {
+ 214:quantum/dynamic_keymap.c ****         // If we are past the end of the buffer, then the buffer
+ 215:quantum/dynamic_keymap.c ****         // contents are garbage, i.e. there were not DYNAMIC_KEYMAP_MACRO_COUNT
+ 216:quantum/dynamic_keymap.c ****         // nulls in the buffer.
+ 217:quantum/dynamic_keymap.c ****         if (p == end) {
+ 218:quantum/dynamic_keymap.c ****             return;
+ 219:quantum/dynamic_keymap.c ****         }
+ 220:quantum/dynamic_keymap.c ****         if (eeprom_read_byte(p) == 0) {
+ 221:quantum/dynamic_keymap.c ****             --id;
+ 222:quantum/dynamic_keymap.c ****         }
+ 223:quantum/dynamic_keymap.c ****         ++p;
+ 224:quantum/dynamic_keymap.c ****     }
+ 225:quantum/dynamic_keymap.c **** 
+ 226:quantum/dynamic_keymap.c ****     // Send the macro string one or three chars at a time
+ 227:quantum/dynamic_keymap.c ****     // by making temporary 1 or 3 char strings
+ 228:quantum/dynamic_keymap.c ****     char data[4] = {0, 0, 0, 0};
+ 229:quantum/dynamic_keymap.c ****     // We already checked there was a null at the end of
+ 230:quantum/dynamic_keymap.c ****     // the buffer, so this cannot go past the end
+ 231:quantum/dynamic_keymap.c ****     while (1) {
+ 232:quantum/dynamic_keymap.c ****         data[0] = eeprom_read_byte(p++);
+ 233:quantum/dynamic_keymap.c ****         data[1] = 0;
+ 234:quantum/dynamic_keymap.c ****         // Stop at the null terminator of this macro string
+ 235:quantum/dynamic_keymap.c ****         if (data[0] == 0) {
+ 236:quantum/dynamic_keymap.c ****             break;
+ 237:quantum/dynamic_keymap.c ****         }
+ 238:quantum/dynamic_keymap.c ****         // If the char is magic (tap, down, up),
+ 239:quantum/dynamic_keymap.c ****         // add the next char (key to use) and send a 3 char string.
+ 240:quantum/dynamic_keymap.c ****         if (data[0] == SS_TAP_CODE || data[0] == SS_DOWN_CODE || data[0] == SS_UP_CODE) {
+ 241:quantum/dynamic_keymap.c ****             data[1] = data[0];
+ 242:quantum/dynamic_keymap.c ****             data[0] = SS_QMK_PREFIX;
+ 243:quantum/dynamic_keymap.c ****             data[2] = eeprom_read_byte(p++);
+ 244:quantum/dynamic_keymap.c ****             if (data[2] == 0) {
+ 245:quantum/dynamic_keymap.c ****                 break;
+ 246:quantum/dynamic_keymap.c ****             }
+ 247:quantum/dynamic_keymap.c ****         }
+ 248:quantum/dynamic_keymap.c ****         send_string(data);
+ 249:quantum/dynamic_keymap.c ****     }
+ 250:quantum/dynamic_keymap.c **** }
+ 1031               		.loc 1 250 1 view .LVU196
+ 1032 002e 0F90      		pop __tmp_reg__
+ 1033 0030 0F90      		pop __tmp_reg__
+ 1034 0032 0F90      		pop __tmp_reg__
+ 1035 0034 0F90      		pop __tmp_reg__
+ 1036 0036 DF91      		pop r29
+ 1037 0038 CF91      		pop r28
+ 1038 003a 1F91      		pop r17
+ 1039 003c 0F91      		pop r16
+ 1040 003e FF90      		pop r15
+ 1041               	.LVL80:
+ 1042               		.loc 1 250 1 view .LVU197
+ 1043 0040 EF90      		pop r14
+ 1044 0042 DF90      		pop r13
+ 1045 0044 0895      		ret
+ 1046               	.LVL81:
+ 1047               	.L44:
+ 217:quantum/dynamic_keymap.c ****             return;
+ 1048               		.loc 1 217 9 is_stmt 1 view .LVU198
+ 217:quantum/dynamic_keymap.c ****             return;
+ 1049               		.loc 1 217 12 is_stmt 0 view .LVU199
+ 1050 0046 0115      		cp r16,__zero_reg__
+ 1051 0048 84E0      		ldi r24,4
+ 1052 004a 1807      		cpc r17,r24
+ 1053 004c 01F0      		breq .L40
+ 220:quantum/dynamic_keymap.c ****             --id;
+ 1054               		.loc 1 220 9 is_stmt 1 view .LVU200
+ 220:quantum/dynamic_keymap.c ****             --id;
+ 1055               		.loc 1 220 13 is_stmt 0 view .LVU201
+ 1056 004e C801      		movw r24,r16
+ 1057 0050 0E94 0000 		call eeprom_read_byte
+ 1058               	.LVL82:
+ 220:quantum/dynamic_keymap.c ****             --id;
+ 1059               		.loc 1 220 12 view .LVU202
+ 1060 0054 8111      		cpse r24,__zero_reg__
+ 1061 0056 00C0      		rjmp .L43
+ 221:quantum/dynamic_keymap.c ****         }
+ 1062               		.loc 1 221 13 is_stmt 1 view .LVU203
+ 1063 0058 FA94      		dec r15
+ 1064               	.LVL83:
+ 1065               	.L43:
+ 223:quantum/dynamic_keymap.c ****     }
+ 1066               		.loc 1 223 9 view .LVU204
+ 1067 005a 0F5F      		subi r16,-1
+ 1068 005c 1F4F      		sbci r17,-1
+ 1069               	.LVL84:
+ 1070               	.L42:
+ 213:quantum/dynamic_keymap.c ****         // If we are past the end of the buffer, then the buffer
+ 1071               		.loc 1 213 11 view .LVU205
+ 1072 005e F110      		cpse r15,__zero_reg__
+ 1073 0060 00C0      		rjmp .L44
+ 228:quantum/dynamic_keymap.c ****     // We already checked there was a null at the end of
+ 1074               		.loc 1 228 5 view .LVU206
+ 228:quantum/dynamic_keymap.c ****     // We already checked there was a null at the end of
+ 1075               		.loc 1 228 10 is_stmt 0 view .LVU207
+ 1076 0062 1982      		std Y+1,__zero_reg__
+ 1077 0064 1A82      		std Y+2,__zero_reg__
+ 1078 0066 1B82      		std Y+3,__zero_reg__
+ 1079 0068 1C82      		std Y+4,__zero_reg__
+ 242:quantum/dynamic_keymap.c ****             data[2] = eeprom_read_byte(p++);
+ 1080               		.loc 1 242 21 view .LVU208
+ 1081 006a DD24      		clr r13
+ 1082 006c D394      		inc r13
+ 1083               	.L46:
+ 231:quantum/dynamic_keymap.c ****         data[0] = eeprom_read_byte(p++);
+ 1084               		.loc 1 231 5 is_stmt 1 view .LVU209
+ 232:quantum/dynamic_keymap.c ****         data[1] = 0;
+ 1085               		.loc 1 232 9 view .LVU210
+ 232:quantum/dynamic_keymap.c ****         data[1] = 0;
+ 1086               		.loc 1 232 19 is_stmt 0 view .LVU211
+ 1087 006e 7801      		movw r14,r16
+ 1088 0070 8FEF      		ldi r24,-1
+ 1089 0072 E81A      		sub r14,r24
+ 1090 0074 F80A      		sbc r15,r24
+ 1091               	.LVL85:
+ 232:quantum/dynamic_keymap.c ****         data[1] = 0;
+ 1092               		.loc 1 232 19 view .LVU212
+ 1093 0076 C801      		movw r24,r16
+ 1094 0078 0E94 0000 		call eeprom_read_byte
+ 1095               	.LVL86:
+ 232:quantum/dynamic_keymap.c ****         data[1] = 0;
+ 1096               		.loc 1 232 17 view .LVU213
+ 1097 007c 8983      		std Y+1,r24
+ 233:quantum/dynamic_keymap.c ****         // Stop at the null terminator of this macro string
+ 1098               		.loc 1 233 9 is_stmt 1 view .LVU214
+ 233:quantum/dynamic_keymap.c ****         // Stop at the null terminator of this macro string
+ 1099               		.loc 1 233 17 is_stmt 0 view .LVU215
+ 1100 007e 1A82      		std Y+2,__zero_reg__
+ 235:quantum/dynamic_keymap.c ****             break;
+ 1101               		.loc 1 235 9 is_stmt 1 view .LVU216
+ 235:quantum/dynamic_keymap.c ****             break;
+ 1102               		.loc 1 235 12 is_stmt 0 view .LVU217
+ 1103 0080 8823      		tst r24
+ 1104 0082 01F0      		breq .L40
+ 240:quantum/dynamic_keymap.c ****             data[1] = data[0];
+ 1105               		.loc 1 240 9 is_stmt 1 view .LVU218
+ 240:quantum/dynamic_keymap.c ****             data[1] = data[0];
+ 1106               		.loc 1 240 63 is_stmt 0 view .LVU219
+ 1107 0084 9FEF      		ldi r25,lo8(-1)
+ 1108 0086 980F      		add r25,r24
+ 240:quantum/dynamic_keymap.c ****             data[1] = data[0];
+ 1109               		.loc 1 240 12 view .LVU220
+ 1110 0088 9330      		cpi r25,lo8(3)
+ 1111 008a 00F4      		brsh .L47
+ 241:quantum/dynamic_keymap.c ****             data[0] = SS_QMK_PREFIX;
+ 1112               		.loc 1 241 13 is_stmt 1 view .LVU221
+ 241:quantum/dynamic_keymap.c ****             data[0] = SS_QMK_PREFIX;
+ 1113               		.loc 1 241 21 is_stmt 0 view .LVU222
+ 1114 008c 8A83      		std Y+2,r24
+ 242:quantum/dynamic_keymap.c ****             data[2] = eeprom_read_byte(p++);
+ 1115               		.loc 1 242 13 is_stmt 1 view .LVU223
+ 242:quantum/dynamic_keymap.c ****             data[2] = eeprom_read_byte(p++);
+ 1116               		.loc 1 242 21 is_stmt 0 view .LVU224
+ 1117 008e D982      		std Y+1,r13
+ 243:quantum/dynamic_keymap.c ****             if (data[2] == 0) {
+ 1118               		.loc 1 243 13 is_stmt 1 view .LVU225
+ 243:quantum/dynamic_keymap.c ****             if (data[2] == 0) {
+ 1119               		.loc 1 243 23 is_stmt 0 view .LVU226
+ 1120 0090 0E5F      		subi r16,-2
+ 1121 0092 1F4F      		sbci r17,-1
+ 1122               	.LVL87:
+ 243:quantum/dynamic_keymap.c ****             if (data[2] == 0) {
+ 1123               		.loc 1 243 23 view .LVU227
+ 1124 0094 C701      		movw r24,r14
+ 1125 0096 0E94 0000 		call eeprom_read_byte
+ 1126               	.LVL88:
+ 243:quantum/dynamic_keymap.c ****             if (data[2] == 0) {
+ 1127               		.loc 1 243 21 view .LVU228
+ 1128 009a 8B83      		std Y+3,r24
+ 244:quantum/dynamic_keymap.c ****                 break;
+ 1129               		.loc 1 244 13 is_stmt 1 view .LVU229
+ 244:quantum/dynamic_keymap.c ****                 break;
+ 1130               		.loc 1 244 16 is_stmt 0 view .LVU230
+ 1131 009c 8823      		tst r24
+ 1132 009e 01F0      		breq .L40
+ 1133               	.L45:
+ 248:quantum/dynamic_keymap.c ****     }
+ 1134               		.loc 1 248 9 is_stmt 1 view .LVU231
+ 1135 00a0 CE01      		movw r24,r28
+ 1136 00a2 0196      		adiw r24,1
+ 1137 00a4 0E94 0000 		call send_string
+ 1138               	.LVL89:
+ 231:quantum/dynamic_keymap.c ****         data[0] = eeprom_read_byte(p++);
+ 1139               		.loc 1 231 11 view .LVU232
+ 232:quantum/dynamic_keymap.c ****         data[1] = 0;
+ 1140               		.loc 1 232 17 is_stmt 0 view .LVU233
+ 1141 00a8 00C0      		rjmp .L46
+ 1142               	.LVL90:
+ 1143               	.L47:
+ 232:quantum/dynamic_keymap.c ****         data[1] = 0;
+ 1144               		.loc 1 232 19 view .LVU234
+ 1145 00aa 8701      		movw r16,r14
+ 1146 00ac 00C0      		rjmp .L45
+ 1147               		.cfi_endproc
+ 1148               	.LFE130:
+ 1150               		.text
+ 1151               	.Letext0:
+ 1152               		.file 2 "e:\\game\\msys2\\mingw64\\avr\\include\\stdint.h"
+ 1153               		.file 3 "tmk_core/common/keyboard.h"
+ 1154               		.file 4 "e:\\game\\msys2\\mingw64\\lib\\gcc\\avr\\8.4.0\\include\\stddef.h"
+ 1155               		.file 5 "lib/lufa/LUFA/Drivers/USB/Core/AVR8/../StdRequestType.h"
+ 1156               		.file 6 "tmk_core/common/action.h"
+ 1157               		.file 7 "lib/lufa/LUFA/Drivers/USB/Core/AVR8/../DeviceStandardReq.h"
+ 1158               		.file 8 "lib/lufa/LUFA/Drivers/USB/Core/USBTask.h"
+ 1159               		.file 9 "lib/lufa/LUFA/Drivers/USB/Core/HostStandardReq.h"
+ 1160               		.file 10 "e:\\game\\msys2\\mingw64\\avr\\include\\stdio.h"
+ 1161               		.file 11 "tmk_core/common/report.h"
+ 1162               		.file 12 "tmk_core/common/host.h"
+ 1163               		.file 13 "tmk_core/common/debug.h"
+ 1164               		.file 14 "quantum/keycode_config.h"
+ 1165               		.file 15 "tmk_core/common/timer.h"
+ 1166               		.file 16 "quantum/sequencer/sequencer.h"
+ 1167               		.file 17 "tmk_core/common/keycode.h"
+ 1168               		.file 18 "quantum/keymap.h"
+ 1169               		.file 19 "./quantum/color.h"
+ 1170               		.file 20 "quantum/rgblight.h"
+ 1171               		.file 21 "tmk_core/common/action_layer.h"
+ 1172               		.file 22 "tmk_core/common/action_util.h"
+ 1173               		.file 23 "quantum/send_string.h"
+ 1174               		.file 24 "e:\\game\\msys2\\mingw64\\avr\\include\\stdlib.h"
+ 1175               		.file 25 "e:\\game\\msys2\\mingw64\\avr\\include\\avr\\eeprom.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 dynamic_keymap.c
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:2      *ABS*:000000000000003e __SP_H__
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:3      *ABS*:000000000000003d __SP_L__
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:4      *ABS*:000000000000003f __SREG__
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:5      *ABS*:0000000000000000 __tmp_reg__
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:6      *ABS*:0000000000000001 __zero_reg__
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:13     .text.dynamic_keymap_get_layer_count:0000000000000000 dynamic_keymap_get_layer_count
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:33     .text.dynamic_keymap_key_to_eeprom_address:0000000000000000 dynamic_keymap_key_to_eeprom_address
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:72     .text.dynamic_keymap_get_keycode:0000000000000000 dynamic_keymap_get_keycode
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:142    .text.dynamic_keymap_set_keycode:0000000000000000 dynamic_keymap_set_keycode
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:203    .text.dynamic_keymap_reset:0000000000000000 dynamic_keymap_reset
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:358    .text.dynamic_keymap_get_buffer:0000000000000000 dynamic_keymap_get_buffer
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:473    .text.dynamic_keymap_set_buffer:0000000000000000 dynamic_keymap_set_buffer
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:593    .text.keymap_key_to_keycode:0000000000000000 keymap_key_to_keycode
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:634    .text.dynamic_keymap_macro_get_count:0000000000000000 dynamic_keymap_macro_get_count
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:653    .text.dynamic_keymap_macro_get_buffer_size:0000000000000000 dynamic_keymap_macro_get_buffer_size
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:673    .text.dynamic_keymap_macro_get_buffer:0000000000000000 dynamic_keymap_macro_get_buffer
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:788    .text.dynamic_keymap_macro_set_buffer:0000000000000000 dynamic_keymap_macro_set_buffer
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:908    .text.dynamic_keymap_macro_reset:0000000000000000 dynamic_keymap_macro_reset
+C:\Users\Roningo\AppData\Local\Temp\ccyeeLen.s:960    .text.dynamic_keymap_macro_send:0000000000000000 dynamic_keymap_macro_send
+
+UNDEFINED SYMBOLS
+eeprom_read_byte
+eeprom_update_byte
+keymaps
+send_string
