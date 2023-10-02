@@ -1,0 +1,233 @@
+   1               		.file	"process_backlight.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               		.section	.text.process_backlight,"ax",@progbits
+  11               	.global	process_backlight
+  13               	process_backlight:
+  14               	.LVL0:
+  15               	.LFB24:
+  16               		.file 1 "quantum/process_keycode/process_backlight.c"
+   1:quantum/process_keycode/process_backlight.c **** /* Copyright 2019
+   2:quantum/process_keycode/process_backlight.c ****  *
+   3:quantum/process_keycode/process_backlight.c ****  * This program is free software: you can redistribute it and/or modify
+   4:quantum/process_keycode/process_backlight.c ****  * it under the terms of the GNU General Public License as published by
+   5:quantum/process_keycode/process_backlight.c ****  * the Free Software Foundation, either version 2 of the License, or
+   6:quantum/process_keycode/process_backlight.c ****  * (at your option) any later version.
+   7:quantum/process_keycode/process_backlight.c ****  *
+   8:quantum/process_keycode/process_backlight.c ****  * This program is distributed in the hope that it will be useful,
+   9:quantum/process_keycode/process_backlight.c ****  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  10:quantum/process_keycode/process_backlight.c ****  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  11:quantum/process_keycode/process_backlight.c ****  * GNU General Public License for more details.
+  12:quantum/process_keycode/process_backlight.c ****  *
+  13:quantum/process_keycode/process_backlight.c ****  * You should have received a copy of the GNU General Public License
+  14:quantum/process_keycode/process_backlight.c ****  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  15:quantum/process_keycode/process_backlight.c ****  */
+  16:quantum/process_keycode/process_backlight.c **** 
+  17:quantum/process_keycode/process_backlight.c **** #include "process_backlight.h"
+  18:quantum/process_keycode/process_backlight.c **** 
+  19:quantum/process_keycode/process_backlight.c **** #ifdef LED_MATRIX_ENABLE
+  20:quantum/process_keycode/process_backlight.c **** #    include "led_matrix.h"
+  21:quantum/process_keycode/process_backlight.c **** #else
+  22:quantum/process_keycode/process_backlight.c **** #    include "backlight.h"
+  23:quantum/process_keycode/process_backlight.c **** #endif
+  24:quantum/process_keycode/process_backlight.c **** 
+  25:quantum/process_keycode/process_backlight.c **** bool process_backlight(uint16_t keycode, keyrecord_t *record) {
+  17               		.loc 1 25 63 view -0
+  18               		.cfi_startproc
+  19               	/* prologue: function */
+  20               	/* frame size = 0 */
+  21               	/* stack size = 0 */
+  22               	.L__stack_usage = 0
+  23               		.loc 1 25 63 is_stmt 0 view .LVU1
+  24 0000 FC01      		movw r30,r24
+  26:quantum/process_keycode/process_backlight.c ****     if (record->event.pressed) {
+  25               		.loc 1 26 5 is_stmt 1 view .LVU2
+  26               		.loc 1 26 22 is_stmt 0 view .LVU3
+  27 0002 DB01      		movw r26,r22
+  28 0004 1296      		adiw r26,2
+  29 0006 8C91      		ld r24,X
+  30               	.LVL1:
+  31               		.loc 1 26 8 view .LVU4
+  32 0008 8823      		tst r24
+  33 000a 01F0      		breq .L11
+  27:quantum/process_keycode/process_backlight.c ****         switch (keycode) {
+  34               		.loc 1 27 9 is_stmt 1 view .LVU5
+  35 000c EC5B      		subi r30,-68
+  36 000e FC45      		sbci r31,92
+  37               	.LVL2:
+  38               		.loc 1 27 9 is_stmt 0 view .LVU6
+  39 0010 E730      		cpi r30,7
+  40 0012 F105      		cpc r31,__zero_reg__
+  41 0014 00F4      		brsh .L1
+  42 0016 E050      		subi r30,lo8(-(gs(.L4)))
+  43 0018 F040      		sbci r31,hi8(-(gs(.L4)))
+  44               	.LVL3:
+  45               		.loc 1 27 9 view .LVU7
+  46 001a 0C94 0000 		jmp __tablejump2__
+  47               		.section	.jumptables.gcc.process_backlight,"a",@progbits
+  48               		.p2align	1
+  49               	.L4:
+  50 0000 0000      		.word gs(.L10)
+  51 0002 0000      		.word gs(.L9)
+  52 0004 0000      		.word gs(.L8)
+  53 0006 0000      		.word gs(.L7)
+  54 0008 0000      		.word gs(.L6)
+  55 000a 0000      		.word gs(.L5)
+  56 000c 0000      		.word gs(.L3)
+  57               		.section	.text.process_backlight
+  58               	.L10:
+  28:quantum/process_keycode/process_backlight.c **** #ifdef LED_MATRIX_ENABLE
+  29:quantum/process_keycode/process_backlight.c ****             case BL_ON:
+  30:quantum/process_keycode/process_backlight.c ****                 led_matrix_enable();
+  31:quantum/process_keycode/process_backlight.c ****                 return false;
+  32:quantum/process_keycode/process_backlight.c ****             case BL_OFF:
+  33:quantum/process_keycode/process_backlight.c ****                 led_matrix_disable();
+  34:quantum/process_keycode/process_backlight.c ****                 return false;
+  35:quantum/process_keycode/process_backlight.c ****             case BL_DEC:
+  36:quantum/process_keycode/process_backlight.c ****                 led_matrix_decrease_val();
+  37:quantum/process_keycode/process_backlight.c ****                 return false;
+  38:quantum/process_keycode/process_backlight.c ****             case BL_INC:
+  39:quantum/process_keycode/process_backlight.c ****                 led_matrix_increase_val();
+  40:quantum/process_keycode/process_backlight.c ****                 return false;
+  41:quantum/process_keycode/process_backlight.c ****             case BL_TOGG:
+  42:quantum/process_keycode/process_backlight.c ****                 led_matrix_toggle();
+  43:quantum/process_keycode/process_backlight.c ****                 return false;
+  44:quantum/process_keycode/process_backlight.c ****             case BL_STEP:
+  45:quantum/process_keycode/process_backlight.c ****                 led_matrix_step();
+  46:quantum/process_keycode/process_backlight.c ****                 return false;
+  47:quantum/process_keycode/process_backlight.c **** #else
+  48:quantum/process_keycode/process_backlight.c ****             case BL_ON:
+  49:quantum/process_keycode/process_backlight.c ****                 backlight_level(BACKLIGHT_LEVELS);
+  59               		.loc 1 49 17 is_stmt 1 view .LVU8
+  60 001e 85E0      		ldi r24,lo8(5)
+  61               	.L12:
+  50:quantum/process_keycode/process_backlight.c ****                 return false;
+  51:quantum/process_keycode/process_backlight.c ****             case BL_OFF:
+  52:quantum/process_keycode/process_backlight.c ****                 backlight_level(0);
+  62               		.loc 1 52 17 is_stmt 0 view .LVU9
+  63 0020 0E94 0000 		call backlight_level
+  64               	.LVL4:
+  65               	.L13:
+  53:quantum/process_keycode/process_backlight.c ****                 return false;
+  66               		.loc 1 53 17 is_stmt 1 view .LVU10
+  67               		.loc 1 53 24 is_stmt 0 view .LVU11
+  68 0024 80E0      		ldi r24,0
+  69 0026 0895      		ret
+  70               	.LVL5:
+  71               	.L9:
+  52:quantum/process_keycode/process_backlight.c ****                 return false;
+  72               		.loc 1 52 17 is_stmt 1 view .LVU12
+  73 0028 80E0      		ldi r24,0
+  74 002a 00C0      		rjmp .L12
+  75               	.L8:
+  54:quantum/process_keycode/process_backlight.c ****             case BL_DEC:
+  55:quantum/process_keycode/process_backlight.c ****                 backlight_decrease();
+  76               		.loc 1 55 17 view .LVU13
+  77 002c 0E94 0000 		call backlight_decrease
+  78               	.LVL6:
+  56:quantum/process_keycode/process_backlight.c ****                 return false;
+  79               		.loc 1 56 17 view .LVU14
+  80 0030 00C0      		rjmp .L13
+  81               	.LVL7:
+  82               	.L7:
+  57:quantum/process_keycode/process_backlight.c ****             case BL_INC:
+  58:quantum/process_keycode/process_backlight.c ****                 backlight_increase();
+  83               		.loc 1 58 17 view .LVU15
+  84 0032 0E94 0000 		call backlight_increase
+  85               	.LVL8:
+  59:quantum/process_keycode/process_backlight.c ****                 return false;
+  86               		.loc 1 59 17 view .LVU16
+  87 0036 00C0      		rjmp .L13
+  88               	.LVL9:
+  89               	.L6:
+  60:quantum/process_keycode/process_backlight.c ****             case BL_TOGG:
+  61:quantum/process_keycode/process_backlight.c ****                 backlight_toggle();
+  90               		.loc 1 61 17 view .LVU17
+  91 0038 0E94 0000 		call backlight_toggle
+  92               	.LVL10:
+  62:quantum/process_keycode/process_backlight.c ****                 return false;
+  93               		.loc 1 62 17 view .LVU18
+  94 003c 00C0      		rjmp .L13
+  95               	.LVL11:
+  96               	.L5:
+  63:quantum/process_keycode/process_backlight.c ****             case BL_STEP:
+  64:quantum/process_keycode/process_backlight.c ****                 backlight_step();
+  97               		.loc 1 64 17 view .LVU19
+  98 003e 0E94 0000 		call backlight_step
+  99               	.LVL12:
+  65:quantum/process_keycode/process_backlight.c ****                 return false;
+ 100               		.loc 1 65 17 view .LVU20
+ 101 0042 00C0      		rjmp .L13
+ 102               	.LVL13:
+ 103               	.L3:
+  66:quantum/process_keycode/process_backlight.c **** #    ifdef BACKLIGHT_BREATHING
+  67:quantum/process_keycode/process_backlight.c ****             case BL_BRTG:
+  68:quantum/process_keycode/process_backlight.c ****                 backlight_toggle_breathing();
+ 104               		.loc 1 68 17 view .LVU21
+ 105 0044 0E94 0000 		call backlight_toggle_breathing
+ 106               	.LVL14:
+  69:quantum/process_keycode/process_backlight.c ****                 return false;
+ 107               		.loc 1 69 17 view .LVU22
+ 108 0048 00C0      		rjmp .L13
+ 109               	.LVL15:
+ 110               	.L11:
+  70:quantum/process_keycode/process_backlight.c **** #    endif
+  71:quantum/process_keycode/process_backlight.c **** #endif
+  72:quantum/process_keycode/process_backlight.c ****         }
+  73:quantum/process_keycode/process_backlight.c ****     }
+  74:quantum/process_keycode/process_backlight.c **** 
+  75:quantum/process_keycode/process_backlight.c ****     return true;
+ 111               		.loc 1 75 12 is_stmt 0 view .LVU23
+ 112 004a 81E0      		ldi r24,lo8(1)
+ 113               	.LVL16:
+ 114               	.L1:
+ 115               	/* epilogue start */
+  76:quantum/process_keycode/process_backlight.c **** }
+ 116               		.loc 1 76 1 view .LVU24
+ 117 004c 0895      		ret
+ 118               		.cfi_endproc
+ 119               	.LFE24:
+ 121               		.text
+ 122               	.Letext0:
+ 123               		.file 2 "e:\\game\\msys2\\mingw64\\avr\\include\\stdint.h"
+ 124               		.file 3 "e:\\game\\msys2\\mingw64\\lib\\gcc\\avr\\8.4.0\\include\\stddef.h"
+ 125               		.file 4 "tmk_core/common/keyboard.h"
+ 126               		.file 5 "tmk_core/common/action.h"
+ 127               		.file 6 "tmk_core/common/report.h"
+ 128               		.file 7 "tmk_core/common/host.h"
+ 129               		.file 8 "tmk_core/common/debug.h"
+ 130               		.file 9 "quantum/keycode_config.h"
+ 131               		.file 10 "tmk_core/common/timer.h"
+ 132               		.file 11 "quantum/sequencer/sequencer.h"
+ 133               		.file 12 "quantum/quantum_keycodes.h"
+ 134               		.file 13 "quantum/keymap.h"
+ 135               		.file 14 "./quantum/color.h"
+ 136               		.file 15 "quantum/rgblight.h"
+ 137               		.file 16 "tmk_core/common/action_layer.h"
+ 138               		.file 17 "tmk_core/common/action_util.h"
+ 139               		.file 18 "quantum/send_string.h"
+ 140               		.file 19 "e:\\game\\msys2\\mingw64\\avr\\include\\stdlib.h"
+ 141               		.file 20 "quantum/backlight/backlight.h"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 process_backlight.c
+C:\Users\Roningo\AppData\Local\Temp\ccdFakFh.s:2      *ABS*:000000000000003e __SP_H__
+C:\Users\Roningo\AppData\Local\Temp\ccdFakFh.s:3      *ABS*:000000000000003d __SP_L__
+C:\Users\Roningo\AppData\Local\Temp\ccdFakFh.s:4      *ABS*:000000000000003f __SREG__
+C:\Users\Roningo\AppData\Local\Temp\ccdFakFh.s:5      *ABS*:0000000000000000 __tmp_reg__
+C:\Users\Roningo\AppData\Local\Temp\ccdFakFh.s:6      *ABS*:0000000000000001 __zero_reg__
+C:\Users\Roningo\AppData\Local\Temp\ccdFakFh.s:13     .text.process_backlight:0000000000000000 process_backlight
+
+UNDEFINED SYMBOLS
+__tablejump2__
+backlight_level
+backlight_decrease
+backlight_increase
+backlight_toggle
+backlight_step
+backlight_toggle_breathing
